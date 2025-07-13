@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ตรวจจับคำหยาบจากหน้าจอ</title>
+    <style>
+        body { font-family: Tahoma, Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 0; }
+        .container { max-width: 800px; margin: 40px auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #ccc; padding: 30px; }
+        h2 { color: #333; }
+        button { background: #007bff; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px 0; }
+        button:hover { background: #0056b3; }
+        pre { background: #f0f0f0; padding: 10px; border-radius: 5px; max-height: 200px; overflow-y: auto; }
+        .result { margin-top: 20px; }
+        .badword { color: #d8000c; font-weight: bold; }
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3);
+            cursor: crosshair;
+            z-index: 1000;
+        }
+        #selection {
+            display: none;
+            position: fixed;
+            border: 2px solid red;
+            background: rgba(255,0,0,0.1);
+            pointer-events: none;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .status.active {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.inactive {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>ตรวจจับคำหยาบจากหน้าจอ</h2>
+        <div id="status" class="status inactive">
+            สถานะ: รอเลือกพื้นที่ตรวจจับ
+        </div>
+        <button id="selectArea">เลือกพื้นที่ตรวจจับ</button>
+        <button id="startDetection" style="display: none;">เริ่มตรวจจับ</button>
+        <button id="stopDetection" style="display: none;">หยุดตรวจจับ</button>
+        
+        <div class="result">
+            <h3>ข้อความที่ตรวจจับได้:</h3>
+            <pre id="ocrText">ยังไม่ได้เริ่มตรวจจับ</pre>
+            <h3>คำหยาบที่พบ:</h3>
+            <ul id="badWords"></ul>
+        </div>
+    </div>
+
+    <div id="overlay"></div>
+    <div id="selection"></div>
+
+    <script>
+        let isSelecting = false;
+        let startX, startY;
+        let selectedRegion = null;
+        let detectionInterval = null;
+
+        document.getElementById('selectArea').addEventListener('click', function() {
+            document.getElementById('status').textContent = 'กรุณาสลับไปหน้าต่างที่ต้องการ แล้วจะเริ่มเลือกกรอบในอีก 5 วินาที...';
+            document.getElementById('status').className = 'status inactive';
+            setTimeout(startAreaSelection, 5000);
+        });
+        document.getElementById('startDetection').addEventListener('click', startDetection);
+        document.getElementById('stopDetection').addEventListener('click', stopDetection);
+
+        function startAreaSelection() {
+            const overlay = document.getElementById('overlay');
+            const selection = document.getElementById('selection');
+            
+            overlay.style.display = 'block';
+            selection.style.display = 'block';
+            
+            overlay.onmousedown = (e) => {
+                isSelecting = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                selection.style.left = startX + 'px';
+                selection.style.top = startY + 'px';
+                selection.style.width = '0';
+                selection.style.height = '0';
+            };
+            
+            overlay.onmousemove = (e) => {
+                if (!isSelecting) return;
+                
+                const width = e.clientX - startX;
+                const height = e.clientY - startY;
+                
+                selection.style.width = Math.abs(width) + 'px';
+                selection.style.height = Math.abs(height) + 'px';
+                selection.style.left = (width < 0 ? e.clientX : startX) + 'px';
+                selection.style.top = (height < 0 ? e.clientY : startY) + 'px';
+            };
+            
+            overlay.onmouseup = (e) => {
+                isSelecting = false;
+                overlay.style.display = 'none';
+                selection.style.display = 'none';
+                
+                const width = Math.abs(e.clientX - startX);
+                const height = Math.abs(e.clientY - startY);
+                const left = Math.min(startX, e.clientX);
+                const top = Math.min(startY, e.clientY);
+                
+                selectedRegion = { left, top, width, height };
+                
+                fetch('/select_region', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(selectedRegion)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('status').textContent = 'สถานะ: เลือกพื้นที่แล้ว';
+                        document.getElementById('status').className = 'status active';
+                        document.getElementById('startDetection').style.display = 'inline-block';
+                    }
+                });
+            };
+        }
+
+        function startDetection() {
+            document.getElementById('startDetection').style.display = 'none';
+            document.getElementById('stopDetection').style.display = 'inline-block';
+            document.getElementById('status').textContent = 'สถานะ: กำลังตรวจจับ...';
+            
+            detectionInterval = setInterval(() => {
+                fetch('/detect')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error(data.error);
+                            return;
+                        }
+                        
+                        document.getElementById('ocrText').textContent = data.text || 'ไม่พบข้อความ';
+                        
+                        const badWordsList = document.getElementById('badWords');
+                        badWordsList.innerHTML = '';
+                        
+                        if (data.found_words && data.found_words.length > 0) {
+                            data.found_words.forEach(word => {
+                                const li = document.createElement('li');
+                                li.className = 'badword';
+                                li.textContent = word;
+                                badWordsList.appendChild(li);
+                            });
+                        } else {
+                            badWordsList.innerHTML = '<li>ไม่พบคำหยาบ</li>';
+                        }
+                    });
+            }, 1000);
+        }
+
+        function stopDetection() {
+            clearInterval(detectionInterval);
+            document.getElementById('startDetection').style.display = 'inline-block';
+            document.getElementById('stopDetection').style.display = 'none';
+            document.getElementById('status').textContent = 'สถานะ: หยุดตรวจจับ';
+        }
+    </script>
+</body>
+</html> 

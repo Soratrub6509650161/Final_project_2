@@ -1,0 +1,9 @@
+pytesseract==0.3.10
+Pillow==10.0.0
+numpy==1.24.3
+opencv-python==4.8.0
+mss==9.0.1
+Flask==2.3.2
+PyQt5==5.15.9
+pandas==2.0.3
+pythainlp==4.0.2
