@@ -19,6 +19,7 @@ from datetime import datetime
 from datetime import timedelta
 import re
 import pandas as pd
+import difflib
 # เตรียม import สำหรับตัดคำไทย
 try:
     from pythainlp.tokenize import word_tokenize
@@ -75,6 +76,13 @@ class BadWordManagerDialog(QDialog):
         self.list_widget = QListWidget()
         self.input_line = QLineEdit()
         self.input_line.setPlaceholderText('เพิ่มคำหยาบใหม่...')
+        
+        # --- เพิ่มช่องค้นหา ---
+        self.search_line = QLineEdit()
+        self.search_line.setPlaceholderText('ค้นหาคำหยาบ...')
+        self.search_line.textChanged.connect(self.filter_words)
+        # --- จบเพิ่ม ---
+        
         add_btn = QPushButton('เพิ่ม')
         del_btn = QPushButton('ลบที่เลือก')
         save_btn = QPushButton('บันทึก')
@@ -90,29 +98,45 @@ class BadWordManagerDialog(QDialog):
         btn_layout.addWidget(close_btn)
         layout = QVBoxLayout()
         layout.addWidget(QLabel('คำหยาบทั้งหมด:'))
+        # --- เพิ่มช่องค้นหาใน layout ---
+        layout.addWidget(self.search_line)
+        # --- จบเพิ่ม ---
         layout.addWidget(self.list_widget)
         layout.addWidget(self.input_line)
         layout.addLayout(btn_layout)
         self.setLayout(layout)
+        self.all_words = []  # เก็บคำทั้งหมดไว้สำหรับ filter
         self.load_words()
     def load_words(self):
         self.list_widget.clear()
+        self.all_words = []
         try:
             with open(self.badwords_file, 'r', encoding='utf-8') as f:
                 for line in f:
                     word = line.strip()
                     if word:
+                        self.all_words.append(word)
                         self.list_widget.addItem(word)
         except FileNotFoundError:
             pass
+    def filter_words(self):
+        search = self.search_line.text().strip().lower()
+        self.list_widget.clear()
+        for word in self.all_words:
+            if search in word.lower():
+                self.list_widget.addItem(word)
     def add_word(self):
         word = self.input_line.text().strip()
         if word and not self.list_widget.findItems(word, Qt.MatchExactly):
-            self.list_widget.addItem(word)
+            self.all_words.append(word)
+            self.filter_words()
             self.input_line.clear()
     def delete_selected(self):
         for item in self.list_widget.selectedItems():
+            word = item.text()
+            self.all_words = [w for w in self.all_words if w != word]
             self.list_widget.takeItem(self.list_widget.row(item))
+        self.filter_words()
     def save_words(self):
         words = [self.list_widget.item(i).text().strip() for i in range(self.list_widget.count()) if self.list_widget.item(i).text().strip()]
         try:
@@ -633,26 +657,9 @@ class BadWordDetectorApp(QWidget):
         self.log_cooldown = self.logcap_spin.value()
 
     def update_dashboard(self):
-        """อัพเดท Dashboard สถิติ"""
-        # อัพเดทจำนวนคำหยาบที่พบวันนี้
-        self.detection_count_label.setText(str(self.detection_count))
-        
-        # อัพเดทจำนวน Screenshot
-        self.screenshot_count_label.setText(str(self.screenshot_count))
-        
-        # อัพเดทเวลาการทำงาน
-        if self.start_time:
-            elapsed = datetime.now() - self.start_time
-            hours = elapsed.seconds // 3600
-            minutes = (elapsed.seconds % 3600) // 60
-            seconds = elapsed.seconds % 60
-            self.working_time_label.setText(f'{hours:02d}:{minutes:02d}:{seconds:02d}')
-        
-        # อัพเดทความถี่การตรวจจับ (คำนวณจาก 1 นาทีล่าสุด)
-        now = datetime.now()
-        recent_detections = [t for t in self.detection_times if (now - t).seconds <= 60]
-        freq = len(recent_detections)
-        self.detection_freq_label.setText(f'{freq} ครั้ง/นาที')
+        # ฟังก์ชันนี้ไม่จำเป็นต้องอัพเดท label ใด ๆ ใน BadWordDetectorApp
+        # DashboardWindow จะดึงข้อมูลจาก BadWordDetectorApp ไปแสดงผลเอง
+        pass
 
     def update_working_time(self):
         """อัพเดทเวลาการทำงานทุกวินาที"""
@@ -706,16 +713,22 @@ class BadWordDetectorApp(QWidget):
             text_lower = text.lower()
             text_no_space_lower = text_no_space.lower()
             
+            # --- ตรวจจับคำหยาบด้วย regex, no-space, และ fuzzy matching ---
             for w in badwords_th + badwords_en:
                 w_lower = w.lower()
                 safe_chars = [re.escape(c) for c in w_lower]
-                pattern = r'[\s\.\-\_]*'.join(safe_chars)
+                pattern = r'[\s\.\-\_@#\$%\*&\^~\|/\\:;\'\"<>\[\]\{\}\(\)\+=`]*'.join(safe_chars)
                 try:
                     if re.search(pattern, text_lower):
                         found_words.add(w)
                 except re.error as e:
                     print(f'Regex error for word {w}: {e}')
                 if w_lower in text_no_space_lower:
+                    found_words.add(w)
+                # เพิ่ม fuzzy matching
+                if self.fuzzy_in_text(w_lower, text_lower, threshold=0.8):
+                    found_words.add(w)
+                if self.fuzzy_in_text(w_lower, text_no_space_lower, threshold=0.8):
                     found_words.add(w)
             
             if word_tokenize is not None:
@@ -762,6 +775,17 @@ class BadWordDetectorApp(QWidget):
         except Exception as e:
             self.status_label.setText(f'ข้อผิดพลาด: {str(e)}')
             self.status_label.setStyleSheet('color: red')
+
+    def fuzzy_in_text(self, badword, text, threshold=0.8):
+        """
+        ตรวจสอบว่า badword มีอยู่ใน text แบบ fuzzy หรือไม่
+        """
+        n = len(badword)
+        for i in range(len(text) - n + 1):
+            window = text[i:i+n]
+            if difflib.SequenceMatcher(None, badword, window).ratio() >= threshold:
+                return True
+        return False
 
     def play_alert(self):
         if self.sound_file:
