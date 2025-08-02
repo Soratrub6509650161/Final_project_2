@@ -1,9 +1,14 @@
-pytesseract==0.3.10
-Pillow==10.0.0
-numpy==1.24.3
-opencv-python==4.8.0
-mss==9.0.1
-Flask==2.3.2
 PyQt5==5.15.9
 pandas==2.0.3
 pythainlp==4.0.2
+requests==2.31.0
+
+# สำหรับ Twitch IRC connection
+# ใช้ socket ที่มีอยู่แล้วใน Python standard library
+# ไม่ต้องติดตั้งเพิ่มเติม
+
+# สำหรับการเข้าถึงข้อความตรงๆ
+# discord.py==2.3.2  # ถ้าต้องการใช้งาน Discord
+# google-api-python-client==2.108.0  # ถ้าต้องการใช้งาน YouTube
+# google-auth-oauthlib==1.1.0
+# google-auth-httplib2==0.1.1

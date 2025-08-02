@@ -1,0 +1,17 @@
+2025-08-02 19:40:47,301 - ERROR - Error compiling regex patterns: bad escape \d at position 3
+2025-08-02 19:40:47,301 - INFO - Initialized detection system with 2809 words
+2025-08-02 19:40:48,570 - INFO - Successfully connected to savezanarak
+2025-08-02 19:40:48,571 - ERROR - Chat listening error: [WinError 10038] An operation was attempted on something that is not a socket
+2025-08-02 19:40:48,572 - INFO - กำลังลองเชื่อมต่อใหม่... (1/5)
+2025-08-02 19:40:54,774 - INFO - Successfully connected to savezanarak
+2025-08-02 19:42:39,345 - ERROR - Error compiling regex patterns: bad escape \d at position 3
+2025-08-02 19:42:39,346 - INFO - Initialized detection system with 2809 words
+2025-08-02 19:42:40,613 - INFO - Successfully connected to savezanarak
+2025-08-02 19:42:40,613 - ERROR - Socket is None, cannot receive data
+2025-08-02 19:43:50,568 - ERROR - Error compiling regex patterns: bad escape \d at position 3
+2025-08-02 19:43:50,568 - INFO - Initialized detection system with 2809 words
+2025-08-02 19:43:52,803 - INFO - Successfully connected to savezanarak
+2025-08-02 19:43:52,804 - ERROR - Socket is None, cannot receive data
+2025-08-02 19:45:53,991 - ERROR - Error compiling regex patterns: bad escape \d at position 3
+2025-08-02 19:45:53,992 - INFO - Initialized detection system with 2809 words
+2025-08-02 19:45:55,252 - INFO - Successfully connected to savezanarak
