@@ -135,41 +135,10 @@ class TwitchChatWorker(QObject):
             self.error_occurred.emit(f"Detection system error: {e}")
     
     def compile_regex_patterns(self):
-        """Pre-compile regex patterns สำหรับประสิทธิภาพที่ดีขึ้น"""
-        try:
-            # Pattern สำหรับตัวอักษรพิเศษไทย
-            special_chars_th = r'[\*\_\@\#\$\%\^\&\(\)\+\=\-\[\]\{\}\|\\\:\;\'\"\<\>\?\/\.\,\d๐-๙]+'
-            
-            # Pattern สำหรับตัวอักษรพิเศษอังกฤษ
-            special_chars_en = r'[\s\.\-\_@#\$%\*&\^~\|/\\:;\'\"<>\[\]\{\}\(\)\+=`0-9]*'
-            
-            # Compile patterns สำหรับคำไทย
-            for word in self.badwords_th:
-                if len(word) >= 3:
-                    # Pattern สำหรับตัวอักษรพิเศษ
-                    pattern = special_chars_th.join([re.escape(c) for c in word])
-                    self.compiled_patterns[f"special_th_{word}"] = re.compile(pattern, re.IGNORECASE)
-                    
-                    # Pattern สำหรับตัวเลขแทรก
-                    pattern_with_numbers = re.sub(r'(.)', r'\1[\d๐-๙]*', re.escape(word))
-                    self.compiled_patterns[f"numbers_th_{word}"] = re.compile(pattern_with_numbers, re.IGNORECASE)
-            
-            # Compile patterns สำหรับคำอังกฤษ
-            for word in self.badwords_en:
-                if len(word) >= 3:
-                    # Pattern สำหรับตัวอักษรพิเศษ
-                    pattern = special_chars_en.join([re.escape(c) for c in word])
-                    self.compiled_patterns[f"special_en_{word}"] = re.compile(pattern, re.IGNORECASE)
-                    
-                    # Pattern สำหรับตัวเลขแทรก
-                    pattern_with_numbers = re.sub(r'(.)', r'\1[0-9]*', re.escape(word))
-                    self.compiled_patterns[f"numbers_en_{word}"] = re.compile(pattern_with_numbers, re.IGNORECASE)
-            
-            self.logger.info(f"Compiled {len(self.compiled_patterns)} regex patterns")
-            
-        except Exception as e:
-            self.logger.error(f"Error compiling regex patterns: {e}")
-            self.error_occurred.emit(f"Regex compilation error: {e}")
+        """Pre-compile regex patterns สำหรับประสิทธิภาพที่ดีขึ้น (ปิดชั่วคราว)"""
+        # ปิดการ compile regex patterns ชั่วคราว
+        self.logger.info("Regex patterns compilation disabled")
+        pass
         
     def load_bad_words(self):
         """โหลดคำหยาบจากไฟล์"""
@@ -216,13 +185,14 @@ class TwitchChatWorker(QObject):
             no_space_matches_en = self.badwords_en.intersection(set([message_no_space[i:i+len(w)] for w in self.badwords_en for i in range(len(message_no_space)-len(w)+1)]))
             found_words.update(no_space_matches_en)
             
-            # วิธีที่ 3: ใช้ Pre-compiled regex patterns
-            for pattern_name, pattern in self.compiled_patterns.items():
-                if pattern.search(message_lower):
-                    # ดึงคำจาก pattern name
-                    word = pattern_name.split('_', 2)[2]  # special_th_word -> word
-                    if word not in self.whitelist:
-                        found_words.add(word)
+            # วิธีที่ 3: ตรวจจับคำที่มีสัญลักษณ์แทรกแบบง่าย
+            # ลบสัญลักษณ์และตัวเลขออกแล้วเปรียบเทียบ
+            message_clean = re.sub(r'[^a-zA-Zก-๙\s]', '', message_lower)  # ลบสัญลักษณ์และตัวเลขออก (เหลือแค่ตัวอักษร)
+            words_clean = message_clean.split()
+            
+            for word in words_clean:
+                if self.trie.search(word) and word not in self.whitelist:
+                    found_words.add(word)
             
             return list(found_words)
             
@@ -1453,9 +1423,15 @@ class BadWordDetectorApp(QWidget):
             if hasattr(self, 'performance_timer'):
                 self.performance_timer.stop()
             
-            # ปิดการเชื่อมต่อ Twitch
+            # ปิดการเชื่อมต่อ Twitch และรอ thread จบ
             if self.twitch_thread:
                 self.disconnect_twitch()
+                # รอ thread จบก่อนปิดโปรแกรม
+                if self.twitch_thread.isRunning():
+                    self.twitch_thread.wait(3000)  # รอ 3 วินาที
+                    if self.twitch_thread.isRunning():
+                        self.twitch_thread.terminate()  # Force terminate
+                        self.twitch_thread.wait(1000)  # รออีก 1 วินาที
             
             # บันทึกสถิติสุดท้าย
             self.log_final_stats()
