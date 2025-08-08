@@ -27,38 +27,38 @@ except ImportError:
 # เพิ่ม Trie Data Structure สำหรับการค้นหาที่เร็วขึ้น
 class TrieNode:
     def __init__(self):
-        self.children = {}
-        self.is_end_of_word = False
-        self.word = None
+        self.children = {}           # สร้างดิกชันนารีไว้เก็บลูกของ node นี้ (key = ตัวอักษร, value = TrieNode ลูก)
+        self.is_end_of_word = False  # ตัวแปรบอกว่า node นี้เป็นจุดจบของคำหรือไม่ (True = จบคำ)
+        self.word = None             # เก็บคำเต็มๆ ถ้า node นี้เป็นจุดจบของคำ (ใช้สำหรับอ้างอิงหรือดึงคำออกมา)
 
 class Trie:
     def __init__(self):
-        self.root = TrieNode()
+        self.root = TrieNode()       # สร้าง root node (จุดเริ่มต้นของ Trie)
     
     def insert(self, word):
-        node = self.root
-        for char in word.lower():
-            if char not in node.children:
-                node.children[char] = TrieNode()
-            node = node.children[char]
-        node.is_end_of_word = True
-        node.word = word
+        node = self.root            # เริ่มต้นที่ root
+        for char in word.lower():   # วนลูปทีละตัวอักษรในคำ (แปลงเป็นตัวพิมพ์เล็ก)
+            if char not in node.children:           # ถ้า node ปัจจุบันยังไม่มีลูกสำหรับตัวอักษรนี้
+                node.children[char] = TrieNode()    # สร้าง node ลูกใหม่สำหรับตัวอักษรนี้
+            node = node.children[char]              # เลื่อนไปยัง node ลูก (เดินลงไปทีละตัวอักษร)
+        node.is_end_of_word = True   # หลังจากวนจบทุกตัวอักษร กำหนดว่า node สุดท้ายนี้เป็นจุดจบของคำ
+        node.word = word            # เก็บคำเต็มๆ ไว้ที่ node สุดท้าย
     
     def search(self, word):
-        node = self.root
-        for char in word.lower():
-            if char not in node.children:
-                return False
-            node = node.children[char]
-        return node.is_end_of_word
+        node = self.root            # เริ่มที่ root
+        for char in word.lower():   # วนลูปทีละตัวอักษรในคำ
+            if char not in node.children:   # ถ้าไม่มี node ลูกสำหรับตัวอักษรนี้
+                return False                # แปลว่าไม่มีคำนี้ใน Trie
+            node = node.children[char]      # ถ้ามี node ลูกสำหรับตัวอักษรนี้ → เดินต่อ
+        return node.is_end_of_word          # หลังจากวนจบทุกตัวอักษร เช็คว่า node สุดท้ายเป็นจุดจบของคำหรือไม่
     
     def search_prefix(self, prefix):
-        node = self.root
-        for char in prefix.lower():
-            if char not in node.children:
-                return False
-            node = node.children[char]
-        return True
+        node = self.root            # เริ่มที่ root
+        for char in prefix.lower(): # วนลูปทีละตัวอักษรใน prefix
+            if char not in node.children:   # ถ้าไม่มี node ลูกสำหรับตัวอักษรนี้
+                return False                # แปลว่าไม่มี prefix นี้ใน Trie
+            node = node.children[char]      # ถ้ามี node ลูกสำหรับตัวอักษรนี้ → เดินต่อ
+        return True                         # ถ้าเดินครบทุกตัวอักษรของ prefix ได้ → มี prefix นี้ใน Trie
 
 class TwitchChatWorker(QObject):
     """Worker class สำหรับจัดการ Twitch chat connection"""
