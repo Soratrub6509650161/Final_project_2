@@ -1,9 +1,43 @@
-2025-08-04 16:56:16,302 - INFO - Regex patterns compilation disabled
-2025-08-04 16:56:16,303 - INFO - Initialized detection system with 2808 words
-2025-08-04 16:56:17,563 - INFO - Successfully connected to savezanarak
-2025-08-05 21:15:29,495 - INFO - Regex patterns compilation disabled
-2025-08-05 21:15:29,496 - INFO - Initialized detection system with 2808 words
-2025-08-05 21:15:30,746 - INFO - Successfully connected to savezanarak
-2025-08-06 13:43:52,759 - INFO - Regex patterns compilation disabled
-2025-08-06 13:43:52,759 - INFO - Initialized detection system with 2808 words
-2025-08-06 13:43:54,026 - INFO - Successfully connected to savezanarak
+2025-08-10 17:39:52,658 - WARNING - profanity_check not available, using basic detection
+2025-08-10 17:39:52,658 - INFO - Initialized detection system with 2808 words
+2025-08-10 17:39:52,659 - INFO - Thai words: 86, English words: 2720
+2025-08-10 17:39:53,957 - INFO - Successfully connected to savezanarak
+2025-08-10 19:43:15,427 - WARNING - profanity_check not available, using basic detection
+2025-08-10 19:43:15,427 - INFO - Initialized detection system with 2808 words
+2025-08-10 19:43:15,428 - INFO - Thai words: 86, English words: 2720
+2025-08-10 19:43:16,729 - INFO - Successfully connected to savezanarak
+2025-08-12 12:48:47,792 - WARNING - profanity_check not available, using basic detection
+2025-08-12 12:48:47,793 - INFO - Initialized detection system with 2808 words
+2025-08-12 12:48:47,793 - INFO - Thai words: 86, English words: 2720
+2025-08-12 12:48:49,014 - INFO - Successfully connected to savezanarak
+2025-08-12 13:28:00,187 - WARNING - profanity_check not available, using basic detection
+2025-08-12 13:28:00,188 - INFO - Initialized detection system with 2808 words
+2025-08-12 13:28:00,188 - INFO - Thai words: 86, English words: 2720
+2025-08-12 13:28:01,433 - INFO - Successfully connected to savezanarak
+2025-08-12 13:38:43,588 - WARNING - profanity_check not available, using basic detection
+2025-08-12 13:38:43,588 - INFO - Initialized detection system with 2808 words
+2025-08-12 13:38:43,588 - INFO - Thai words: 86, English words: 2720
+2025-08-12 13:38:44,872 - INFO - Successfully connected to savezanarak
+2025-08-12 13:45:13,901 - WARNING - profanity_check not available, using basic detection
+2025-08-12 13:45:13,901 - INFO - Initialized detection system with 2808 words
+2025-08-12 13:45:13,901 - INFO - Thai words: 86, English words: 2720
+2025-08-12 13:45:15,249 - INFO - Successfully connected to savezanarak
+2025-08-12 13:51:27,913 - WARNING - profanity_check not available, using basic detection
+2025-08-12 13:51:27,914 - INFO - Initialized detection system with 2808 words
+2025-08-12 13:51:27,914 - INFO - Thai words: 86, English words: 2720
+2025-08-12 13:51:29,197 - INFO - Successfully connected to savezanarak
+2025-08-12 14:07:44,936 - WARNING - profanity_check not available, using basic detection
+2025-08-12 14:07:44,936 - INFO - Initialized detection system with 2808 words
+2025-08-12 14:07:44,936 - INFO - Thai words: 86, English words: 2720
+2025-08-12 14:10:01,844 - WARNING - profanity_check not available, using basic detection
+2025-08-12 14:10:01,844 - INFO - Initialized detection system with 2808 words
+2025-08-12 14:10:01,844 - INFO - Thai words: 86, English words: 2720
+2025-08-12 14:10:03,142 - INFO - Successfully connected to savezanarak
+2025-08-12 14:15:51,239 - WARNING - profanity_check not available, using basic detection
+2025-08-12 14:15:51,239 - INFO - Initialized detection system with 2808 words
+2025-08-12 14:15:51,239 - INFO - Thai words: 86, English words: 2720
+2025-08-12 14:15:52,495 - INFO - Successfully connected to savezanarak
+2025-08-12 14:44:35,273 - WARNING - profanity_check not available, using basic detection
+2025-08-12 14:44:35,273 - INFO - Initialized detection system with 2808 words
+2025-08-12 14:44:35,274 - INFO - Thai words: 86, English words: 2720
+2025-08-12 14:44:36,554 - INFO - Successfully connected to savezanarak

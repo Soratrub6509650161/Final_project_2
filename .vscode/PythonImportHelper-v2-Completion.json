@@ -1,0 +1,595 @@
+[
+    {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
+        "documentation": {}
+    },
+    {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "time",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "time",
+        "description": "time",
+        "detail": "time",
+        "documentation": {}
+    },
+    {
+        "label": "threading",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "threading",
+        "description": "threading",
+        "detail": "threading",
+        "documentation": {}
+    },
+    {
+        "label": "socket",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "socket",
+        "description": "socket",
+        "detail": "socket",
+        "documentation": {}
+    },
+    {
+        "label": "logging",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "logging",
+        "description": "logging",
+        "detail": "logging",
+        "documentation": {}
+    },
+    {
+        "label": "deque",
+        "importPath": "collections",
+        "description": "collections",
+        "isExtraImport": true,
+        "detail": "collections",
+        "documentation": {}
+    },
+    {
+        "label": "QApplication",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QWidget",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QPushButton",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QLabel",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QTextEdit",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QVBoxLayout",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QHBoxLayout",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QFileDialog",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QGroupBox",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QGridLayout",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QMessageBox",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QFrame",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QDialog",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QListWidget",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QLineEdit",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QSystemTrayIcon",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QStyle",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QCheckBox",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QTabWidget",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "Qt",
+        "importPath": "PyQt5.QtCore",
+        "description": "PyQt5.QtCore",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtCore",
+        "documentation": {}
+    },
+    {
+        "label": "QTimer",
+        "importPath": "PyQt5.QtCore",
+        "description": "PyQt5.QtCore",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtCore",
+        "documentation": {}
+    },
+    {
+        "label": "pyqtSignal",
+        "importPath": "PyQt5.QtCore",
+        "description": "PyQt5.QtCore",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtCore",
+        "documentation": {}
+    },
+    {
+        "label": "QThread",
+        "importPath": "PyQt5.QtCore",
+        "description": "PyQt5.QtCore",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtCore",
+        "documentation": {}
+    },
+    {
+        "label": "QObject",
+        "importPath": "PyQt5.QtCore",
+        "description": "PyQt5.QtCore",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtCore",
+        "documentation": {}
+    },
+    {
+        "label": "QMutex",
+        "importPath": "PyQt5.QtCore",
+        "description": "PyQt5.QtCore",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtCore",
+        "documentation": {}
+    },
+    {
+        "label": "QFont",
+        "importPath": "PyQt5.QtGui",
+        "description": "PyQt5.QtGui",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtGui",
+        "documentation": {}
+    },
+    {
+        "label": "QIcon",
+        "importPath": "PyQt5.QtGui",
+        "description": "PyQt5.QtGui",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtGui",
+        "documentation": {}
+    },
+    {
+        "label": "winsound",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "winsound",
+        "description": "winsound",
+        "detail": "winsound",
+        "documentation": {}
+    },
+    {
+        "label": "csv",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "csv",
+        "description": "csv",
+        "detail": "csv",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "re",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "re",
+        "description": "re",
+        "detail": "re",
+        "documentation": {}
+    },
+    {
+        "label": "pandas",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "pandas",
+        "description": "pandas",
+        "detail": "pandas",
+        "documentation": {}
+    },
+    {
+        "label": "difflib",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "difflib",
+        "description": "difflib",
+        "detail": "difflib",
+        "documentation": {}
+    },
+    {
+        "label": "Flask",
+        "importPath": "flask",
+        "description": "flask",
+        "isExtraImport": true,
+        "detail": "flask",
+        "documentation": {}
+    },
+    {
+        "label": "render_template",
+        "importPath": "flask",
+        "description": "flask",
+        "isExtraImport": true,
+        "detail": "flask",
+        "documentation": {}
+    },
+    {
+        "label": "request",
+        "importPath": "flask",
+        "description": "flask",
+        "isExtraImport": true,
+        "detail": "flask",
+        "documentation": {}
+    },
+    {
+        "label": "jsonify",
+        "importPath": "flask",
+        "description": "flask",
+        "isExtraImport": true,
+        "detail": "flask",
+        "documentation": {}
+    },
+    {
+        "label": "pytesseract",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "pytesseract",
+        "description": "pytesseract",
+        "detail": "pytesseract",
+        "documentation": {}
+    },
+    {
+        "label": "Image",
+        "importPath": "PIL",
+        "description": "PIL",
+        "isExtraImport": true,
+        "detail": "PIL",
+        "documentation": {}
+    },
+    {
+        "label": "mss",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "mss",
+        "description": "mss",
+        "detail": "mss",
+        "documentation": {}
+    },
+    {
+        "label": "numpy",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "numpy",
+        "description": "numpy",
+        "detail": "numpy",
+        "documentation": {}
+    },
+    {
+        "label": "cv2",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "cv2",
+        "description": "cv2",
+        "detail": "cv2",
+        "documentation": {}
+    },
+    {
+        "label": "TwitchChatWorker",
+        "importPath": "main_gui",
+        "description": "main_gui",
+        "isExtraImport": true,
+        "detail": "main_gui",
+        "documentation": {}
+    },
+    {
+        "label": "Trie",
+        "importPath": "main_gui",
+        "description": "main_gui",
+        "isExtraImport": true,
+        "detail": "main_gui",
+        "documentation": {}
+    },
+    {
+        "label": "remove_duplicate_words",
+        "kind": 2,
+        "importPath": "Data.data",
+        "description": "Data.data",
+        "peekOfCode": "def remove_duplicate_words(input_path, output_path):\n    with open(input_path, \"r\", encoding=\"utf-8\") as infile:\n        words = infile.readlines()\n    # แปลงเป็น set เพื่อกำจัดคำซ้ำ + ตัดช่องว่าง/ขึ้นบรรทัดใหม่\n    unique_words = sorted(set(word.strip() for word in words if word.strip()))\n    with open(output_path, \"w\", encoding=\"utf-8\") as outfile:\n        for word in unique_words:\n            outfile.write(word + \"\\n\")\n    print(f\"✅ ลบคำซ้ำเรียบร้อยแล้ว ({len(unique_words)} คำ) → {output_path}\")\n# ตัวอย่างการใช้งาน",
+        "detail": "Data.data",
+        "documentation": {}
+    },
+    {
+        "label": "TwitchChatWorker",
+        "kind": 6,
+        "importPath": "Main.main_gui",
+        "description": "Main.main_gui",
+        "peekOfCode": "class TwitchChatWorker(QObject):\n    \"\"\"Worker class สำหรับจัดการ Twitch chat connection\"\"\"\n    message_received = pyqtSignal(str, str)  # username, message\n    bad_word_detected = pyqtSignal(str, str, list)  # username, message, bad_words\n    connection_status = pyqtSignal(bool, str)  # connected, status_message\n    chat_stats = pyqtSignal(int, int)  # total_messages, bad_word_count\n    error_occurred = pyqtSignal(str)  # error message\n    def __init__(self, channel_name, oauth_token=None):\n        super().__init__()\n        self.channel_name = channel_name.lower()",
+        "detail": "Main.main_gui",
+        "documentation": {}
+    },
+    {
+        "label": "TwitchChatThread",
+        "kind": 6,
+        "importPath": "Main.main_gui",
+        "description": "Main.main_gui",
+        "peekOfCode": "class TwitchChatThread(QThread):\n    \"\"\"Thread สำหรับจัดการ Twitch chat\"\"\"\n    def __init__(self, channel_name, oauth_token=None):\n        super().__init__()\n        self.worker = TwitchChatWorker(channel_name, oauth_token)\n        self.worker.moveToThread(self)\n        # เชื่อมต่อ thread signals\n        self.started.connect(self.worker.start_listening)\n        self.finished.connect(self.worker.stop_listening)\n    def run(self):",
+        "detail": "Main.main_gui",
+        "documentation": {}
+    },
+    {
+        "label": "BadWordManagerDialog",
+        "kind": 6,
+        "importPath": "Main.main_gui",
+        "description": "Main.main_gui",
+        "peekOfCode": "class BadWordManagerDialog(QDialog):\n    def __init__(self, badwords_file, parent=None):\n        super().__init__(parent)\n        self.setWindowTitle('จัดการคำหยาบ')\n        self.badwords_file = badwords_file\n        self.setMinimumWidth(400)\n        self.list_widget = QListWidget()\n        self.input_line = QLineEdit()\n        self.input_line.setPlaceholderText('เพิ่มคำหยาบใหม่...')\n        # เพิ่มช่องค้นหา",
+        "detail": "Main.main_gui",
+        "documentation": {}
+    },
+    {
+        "label": "DashboardWindow",
+        "kind": 6,
+        "importPath": "Main.main_gui",
+        "description": "Main.main_gui",
+        "peekOfCode": "class DashboardWindow(QWidget):\n    def __init__(self, parent=None):\n        super().__init__()\n        self.parent = parent\n        self.setWindowTitle('Dashboard สถิติ - Bad Word Detector')\n        self.setGeometry(300, 300, 700, 500)\n        self.setFont(QFont('Tahoma', 10))\n        self.init_ui()\n        # Timer สำหรับอัพเดทข้อมูล\n        self.update_timer = QTimer()",
+        "detail": "Main.main_gui",
+        "documentation": {}
+    },
+    {
+        "label": "BadWordDetectorApp",
+        "kind": 6,
+        "importPath": "Main.main_gui",
+        "description": "Main.main_gui",
+        "peekOfCode": "class BadWordDetectorApp(QWidget):\n    def __init__(self):\n        super().__init__()\n        self.setWindowTitle('Twitch Bad Word Detector - Enhanced Version')\n        self.setGeometry(200, 200, 800, 700)\n        self.setFont(QFont('Tahoma', 10))\n        self.bad_words = self.load_all_bad_words()\n        self.sound_file = None\n        # เพิ่มตัวแปรสำหรับ Dashboard\n        self.detection_count = 0",
+        "detail": "Main.main_gui",
+        "documentation": {}
+    },
+    {
+        "label": "load_bad_words",
+        "kind": 2,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "def load_bad_words():\n    try:\n        with open('badwords.txt', 'r', encoding='utf-8') as f:\n            return [line.strip() for line in f if line.strip()]\n    except FileNotFoundError:\n        return []\ndef capture_and_process_screen():\n    if selected_region is None:\n        return None, \"กรุณาเลือกพื้นที่ที่ต้องการตรวจจับก่อน\"\n    try:",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "capture_and_process_screen",
+        "kind": 2,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "def capture_and_process_screen():\n    if selected_region is None:\n        return None, \"กรุณาเลือกพื้นที่ที่ต้องการตรวจจับก่อน\"\n    try:\n        # จับภาพหน้าจอตามพื้นที่ที่เลือก\n        screenshot = sct.grab(selected_region)\n        img = np.array(screenshot)\n        img = cv2.cvtColor(img, cv2.COLOR_BGRA2RGB)\n        # ประมวลผลภาพ\n        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "index",
+        "kind": 2,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "def index():\n    return render_template('index.html')\n@app.route('/select_region', methods=['POST'])\ndef select_region():\n    global selected_region\n    data = request.json\n    selected_region = {\n        'top': data['top'],\n        'left': data['left'],\n        'width': data['width'],",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "select_region",
+        "kind": 2,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "def select_region():\n    global selected_region\n    data = request.json\n    selected_region = {\n        'top': data['top'],\n        'left': data['left'],\n        'width': data['width'],\n        'height': data['height']\n    }\n    return jsonify({'status': 'success'})",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "detect",
+        "kind": 2,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "def detect():\n    text, found_words = capture_and_process_screen()\n    if text is None:\n        return jsonify({'error': found_words})\n    return jsonify({\n        'text': text,\n        'found_words': found_words\n    })\nif __name__ == '__main__':\n    app.run(debug=True, port=5050)",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "app",
+        "kind": 5,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "app = Flask(__name__)\n# ตั้งค่า path ของ tesseract\npytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'\n# ตัวแปรสำหรับเก็บพื้นที่ที่เลือก\nselected_region = None\nsct = mss.mss()\ndef load_bad_words():\n    try:\n        with open('badwords.txt', 'r', encoding='utf-8') as f:\n            return [line.strip() for line in f if line.strip()]",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "pytesseract.pytesseract.tesseract_cmd",
+        "kind": 5,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'\n# ตัวแปรสำหรับเก็บพื้นที่ที่เลือก\nselected_region = None\nsct = mss.mss()\ndef load_bad_words():\n    try:\n        with open('badwords.txt', 'r', encoding='utf-8') as f:\n            return [line.strip() for line in f if line.strip()]\n    except FileNotFoundError:\n        return []",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "selected_region",
+        "kind": 5,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "selected_region = None\nsct = mss.mss()\ndef load_bad_words():\n    try:\n        with open('badwords.txt', 'r', encoding='utf-8') as f:\n            return [line.strip() for line in f if line.strip()]\n    except FileNotFoundError:\n        return []\ndef capture_and_process_screen():\n    if selected_region is None:",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "sct",
+        "kind": 5,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "sct = mss.mss()\ndef load_bad_words():\n    try:\n        with open('badwords.txt', 'r', encoding='utf-8') as f:\n            return [line.strip() for line in f if line.strip()]\n    except FileNotFoundError:\n        return []\ndef capture_and_process_screen():\n    if selected_region is None:\n        return None, \"กรุณาเลือกพื้นที่ที่ต้องการตรวจจับก่อน\"",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "test_f1uck_detection",
+        "kind": 2,
+        "importPath": "test_f1uck",
+        "description": "test_f1uck",
+        "peekOfCode": "def test_f1uck_detection():\n    \"\"\"ทดสอบการตรวจจับ f1uck\"\"\"\n    print(\"🔍 ทดสอบการตรวจจับ f1uck\")\n    print(\"=\" * 50)\n    # สร้าง worker สำหรับทดสอบ\n    worker = TwitchChatWorker(\"test_channel\")\n    # ทดสอบข้อความ\n    test_message = \"f1uck\"\n    print(f\"ข้อความทดสอบ: '{test_message}'\")\n    # ทดสอบขั้นตอนที่ 1: Preprocessing",
+        "detail": "test_f1uck",
+        "documentation": {}
+    },
+    {
+        "label": "test_variations",
+        "kind": 2,
+        "importPath": "test_f1uck",
+        "description": "test_f1uck",
+        "peekOfCode": "def test_variations():\n    \"\"\"ทดสอบรูปแบบต่างๆ ของ fuck\"\"\"\n    print(\"\\n\" + \"=\" * 60)\n    print(\"🧪 ทดสอบรูปแบบต่างๆ ของ fuck\")\n    print(\"=\" * 60)\n    worker = TwitchChatWorker(\"test_channel\")\n    test_cases = [\n        \"fuck\",      # ปกติ\n        \"f1uck\",     # ใช้ตัวเลข 1\n        \"f0ck\",      # ใช้ตัวเลข 0",
+        "detail": "test_f1uck",
+        "documentation": {}
+    },
+    {
+        "label": "analyze_regex",
+        "kind": 2,
+        "importPath": "test_f1uck",
+        "description": "test_f1uck",
+        "peekOfCode": "def analyze_regex():\n    \"\"\"วิเคราะห์ regex pattern\"\"\"\n    print(\"\\n\" + \"=\" * 60)\n    print(\"🔍 วิเคราะห์ Regex Pattern\")\n    print(\"=\" * 60)\n    test_cases = [\n        \"f1uck\",\n        \"f0ck\", \n        \"f@ck\",\n        \"f#ck\",",
+        "detail": "test_f1uck",
+        "documentation": {}
+    }
+]

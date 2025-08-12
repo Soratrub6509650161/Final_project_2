@@ -3,3 +3,4 @@
 [2025-08-02 19:39:23] Error connecting to Twitch: 'TwitchChatWorker' object has no attribute 'logger'
 [2025-08-02 19:39:39] Error connecting to Twitch: 'TwitchChatWorker' object has no attribute 'logger'
 [2025-08-02 19:40:48] Twitch Error: Chat listening error: [WinError 10038] An operation was attempted on something that is not a socket
+[2025-08-12 14:07:44] Error connecting to Twitch: 'TwitchChatWorker' object has no attribute 'start_listening'

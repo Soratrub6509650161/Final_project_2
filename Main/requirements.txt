@@ -3,6 +3,13 @@ pandas==2.0.3
 pythainlp==4.0.2
 requests==2.31.0
 
+# สำหรับการตรวจจับคำหยาบภาษาอังกฤษ
+profanity-check>=1.3.0
+wordsegment==1.3.1
+
+# Alternative library ถ้า profanity-check ไม่ทำงาน
+better-profanity>=0.7.0
+
 # สำหรับ Twitch IRC connection
 # ใช้ socket ที่มีอยู่แล้วใน Python standard library
 # ไม่ต้องติดตั้งเพิ่มเติม
