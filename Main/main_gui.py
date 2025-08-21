@@ -72,9 +72,6 @@ class TwitchChatWorker(QObject):
         self.reconnect_attempts = 0
         self.max_reconnect_attempts = 5
         
-        # เพิ่ม whitelist สำหรับป้องกัน false positive
-        self.whitelist = {'mass', 'class', 'glass', 'pass', 'bass', 'grass', 'brass', 'analysis', 'classic'}
-        
         # เพิ่ม Logging (ต้องเรียกก่อน initialize_detection_system)
         self.setup_logging()
         
@@ -187,7 +184,7 @@ class TwitchChatWorker(QObject):
             found_words = []
             for word in words_to_check:
                 if len(word) >= 3:  # ตรวจเฉพาะคำที่ยาวพอ
-                    if word in self.badwords_en and word not in self.whitelist:
+                    if word in self.badwords_en:
                         found_words.append(word)
                         print(f"🚨 Found profanity: '{word}'")
             
@@ -196,98 +193,8 @@ class TwitchChatWorker(QObject):
             
         except Exception as e:
             print(f"❌ Error in detect_english_profanity: {e}")
-            return self.fallback_english_detection(message)
-        
-        
-    def identify_profane_words(self, message):
-        """ระบุคำหยาบที่เฉพาะเจาะจงในข้อความ"""
-        try:
-            found_words = []
-            message_lower = message.lower()
-            
-            # ใช้ wordsegment แยกคำที่ติดกัน
-            if WORDSEGMENT_AVAILABLE:
-                try:
-                    # แยกคำด้วย wordsegment
-                    words = message_lower.split()
-                    segmented_words = []
-                    
-                    for word in words:
-                        if len(word) > 8:  # คำยาว เช่น "helloass"
-                            segmented = segment(word)
-                            segmented_words.extend(segmented)
-                            print(f"Debug: '{word}' -> {segmented}")  # Debug
-                        else:
-                            segmented_words.append(word)
-                    
-                    # ใช้คำที่แยกแล้วแทน regex
-                    words = segmented_words
-                    print(f"Debug: Final words to check: {words}")  # Debug
-                    
-                except Exception as e:
-                    self.logger.warning(f"wordsegment error: {e}")
-                    # fallback ไปใช้ regex แบบเดิม
-                    words = re.findall(r'\b\w+\b', message_lower)
-            else:
-                # ใช้ regex แบบเดิมถ้า wordsegment ไม่พร้อม
-                words = re.findall(r'\b\w+\b', message_lower)
-            
-            # ตรวจสอบแต่ละคำ
-            for word in words:
-                if len(word) >= 3:  # ตรวจเฉพาะคำที่ยาวพอ
-                    try:
-                        is_profane = predict([word])[0]
-                        print(f"Debug: '{word}' -> predict result: {is_profane}")  # Debug
-                        if is_profane == 1:
-                            found_words.append(word)
-                    except Exception as e:
-                        self.logger.warning(f"predict error for '{word}': {e}")
-                        # fallback ไปใช้ badwords_en
-                        if word in self.badwords_en and word not in self.whitelist:
-                            found_words.append(word)
-            
-            # ถ้าไม่พบคำเฉพาะ แต่ข้อความโดยรวมเป็นคำหยาบ
-            if not found_words:
-                try:
-                    if predict([message])[0] == 1:
-                        found_words.append("inappropriate_content")
-                except Exception as e:
-                    self.logger.warning(f"predict error for message: {e}")
-            
-            print(f"Debug: Final found_words: {found_words}")  # Debug
-            return found_words
-            
-        except Exception as e:
-            self.logger.error(f"Error identifying profane words: {e}")
-            return ["profanity_detected"]
-            
-    def fallback_english_detection(self, message):
-        """วิธีตรวจจับคำหยาบภาษาอังกฤษแบบเดิม (fallback)"""
-        try:
-            found_words = []
-            message_lower = message.lower()
-            
-            # ตรวจสอบคำที่แยกด้วย space (word boundary)
-            words_in_message = re.findall(r'\b\w+\b', message_lower)
-            for word in words_in_message:
-                if word in self.badwords_en and word not in self.whitelist:
-                    found_words.append(word)
-            
-            # ตรวจสอบคำที่ติดกัน (สำหรับคำยาว >= 4 ตัวอักษร)
-            message_clean = re.sub(r'[^a-zA-Z\s]', '', message_lower).replace(' ', '')
-            for en_bad in self.badwords_en:
-                if en_bad in self.whitelist:
-                    continue
-                if len(en_bad) >= 4 and en_bad in message_clean:
-                    found_words.append(en_bad)
-            
-            return list(set(found_words))  # ลบคำซ้ำ
-            
-        except Exception as e:
-            self.logger.error(f"Error in fallback English detection: {e}")
             return []
-    
-    
+                  
     def detect_thai_profanity(self, message):
         """ตรวจจับคำหยาบภาษาไทย"""
         try:

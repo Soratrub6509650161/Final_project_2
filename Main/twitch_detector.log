@@ -41,3 +41,19 @@
 2025-08-12 14:44:35,273 - INFO - Initialized detection system with 2808 words
 2025-08-12 14:44:35,274 - INFO - Thai words: 86, English words: 2720
 2025-08-12 14:44:36,554 - INFO - Successfully connected to savezanarak
+2025-08-13 15:30:05,400 - WARNING - profanity_check not available, using basic detection
+2025-08-13 15:30:05,401 - INFO - Initialized detection system with 2808 words
+2025-08-13 15:30:05,401 - INFO - Thai words: 86, English words: 2720
+2025-08-13 15:30:06,671 - INFO - Successfully connected to savezanarak
+2025-08-13 15:33:46,413 - WARNING - profanity_check not available, using basic detection
+2025-08-13 15:33:46,414 - INFO - Initialized detection system with 2808 words
+2025-08-13 15:33:46,414 - INFO - Thai words: 86, English words: 2720
+2025-08-13 15:33:47,692 - INFO - Successfully connected to savezanarak
+2025-08-20 17:00:08,278 - WARNING - profanity_check not available, using basic detection
+2025-08-20 17:00:08,278 - INFO - Initialized detection system with 2808 words
+2025-08-20 17:00:08,278 - INFO - Thai words: 86, English words: 2720
+2025-08-20 17:00:09,557 - INFO - Successfully connected to savezanarak
+2025-08-20 17:21:35,219 - WARNING - profanity_check not available, using basic detection
+2025-08-20 17:21:35,219 - INFO - Initialized detection system with 2808 words
+2025-08-20 17:21:35,219 - INFO - Thai words: 86, English words: 2720
+2025-08-20 17:21:36,501 - INFO - Successfully connected to savezanarak
