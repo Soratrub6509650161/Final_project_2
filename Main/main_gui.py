@@ -1,7 +1,6 @@
 import sys
 import os
 import time
-import threading
 import socket
 import logging
 from collections import deque
@@ -12,23 +11,11 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QThread, QObject, QMutex
 from PyQt5.QtGui import QFont, QIcon
 import winsound
-import csv
 from datetime import datetime
 from datetime import timedelta
 import re
 import pandas as pd
-import difflib
 
-# เพิ่ม import สำหรับ profanity_check
-try:
-    from profanity_check import predict, predict_prob  # type: ignore
-    PROFANITY_CHECK_AVAILABLE = True
-    print("profanity_check imported successfully")
-except ImportError:
-    PROFANITY_CHECK_AVAILABLE = False
-    print("profanity_check not available, falling back to basic detection")
-    
-    
 try:
     from wordsegment import load, segment # type: ignore
     WORDSEGMENT_AVAILABLE = True
@@ -36,13 +23,6 @@ try:
 except ImportError:
     WORDSEGMENT_AVAILABLE = False
     print("wordsegment not available, falling back to basic detection")    
-
-
-# เตรียม import สำหรับตัดคำไทย
-try:
-      from pythainlp.tokenize import word_tokenize  # type: ignore
-except ImportError:
-    word_tokenize = None
 
 class TwitchChatWorker(QObject):
     """Worker class สำหรับจัดการ Twitch chat connection"""
@@ -115,13 +95,7 @@ class TwitchChatWorker(QObject):
                     self.badwords_th.add(word.lower())
                 else:
                     self.badwords_en.add(word.lower())
-            
-            # ตรวจสอบว่า profanity_check ใช้งานได้หรือไม่
-            if PROFANITY_CHECK_AVAILABLE:
-                self.logger.info("Using profanity_check for English profanity detection")
-            else:
-                self.logger.warning("profanity_check not available, using basic detection")
-            
+                     
             self.logger.info(f"Initialized detection system with {len(self.bad_words)} words")
             self.logger.info(f"Thai words: {len(self.badwords_th)}, English words: {len(self.badwords_en)}")
             
@@ -214,9 +188,8 @@ class TwitchChatWorker(QObject):
             self.logger.error(f"Error in Thai profanity detection: {e}")
             return []
         
-        
     def optimized_detect_bad_words(self, message):
-        """ตรวจจับคำหยาบแบบปรับปรุงประสิทธิภาพ - ใช้ profanity_check สำหรับภาษาอังกฤษ"""
+        """ตรวจจับคำหยาบ"""
         try:
             all_found_words = []
             
@@ -236,7 +209,6 @@ class TwitchChatWorker(QObject):
             self.error_occurred.emit(f"Detection error: {e}")
             return []
            
-    
     def connect_to_twitch(self):
         """เชื่อมต่อกับ Twitch IRC"""
         try:
@@ -245,8 +217,7 @@ class TwitchChatWorker(QObject):
             self.socket.connect(('irc.chat.twitch.tv', 6667))
             
             # ส่งข้อมูล authentication
-            if self.oauth_token:
-                self.socket.send(f'PASS {self.oauth_token}\n'.encode('utf-8'))
+            # ใช้ anonymous user (justinfan + random number)
             self.socket.send(f'NICK justinfan{int(time.time())}\n'.encode('utf-8'))
             self.socket.send(f'JOIN #{self.channel_name}\n'.encode('utf-8'))
             
@@ -281,12 +252,6 @@ class TwitchChatWorker(QObject):
             self.logger.error(error_msg)
             self.connection_status.emit(False, error_msg)
             self.error_occurred.emit(error_msg)
-            return False
-        except Exception as e:
-            error_msg = f"Connection error: {e}"
-            self.logger.error(error_msg)
-            self.connection_status.emit(False, error_msg)
-            self.error_occurred.emit(error_msg)
             # Cleanup ในกรณีที่เกิด error
             if self.socket:
                 try:
@@ -298,6 +263,8 @@ class TwitchChatWorker(QObject):
     
     def listen_to_chat(self):
         """ฟังข้อความจาก chat"""
+        buffer = ""  # เพิ่ม buffer สำหรับข้อมูลที่ไม่สมบูรณ์
+        
         while self.running:
             try:
                 # ตรวจสอบว่า socket ยังใช้งานได้หรือไม่
@@ -305,58 +272,41 @@ class TwitchChatWorker(QObject):
                     self.logger.error("Socket is None, cannot receive data")
                     break
                 
-                data = self.socket.recv(1024).decode('utf-8')
+                data = self.socket.recv(1024).decode('utf-8', errors='ignore')  # เพิ่ม error handling สำหรับ encoding
                 if not data:
+                    self.logger.warning("No data received, connection may be closed")
+                    time.sleep(1)
                     continue
                 
-                # จัดการ PING/PONG
-                if data.startswith('PING'):
-                    if self.socket:  # ตรวจสอบอีกครั้งก่อนส่ง
-                        self.socket.send('PONG :tmi.twitch.tv\r\n'.encode('utf-8'))
-                    continue
+                # เพิ่มข้อมูลใหม่เข้า buffer
+                buffer += data
                 
-                # แยกข้อความ chat
-                if 'PRIVMSG' in data:
-                    # ตัวอย่าง: :username!username@username.tmi.twitch.tv PRIVMSG #channel :message
-                    parts = data.split('PRIVMSG')
-                    if len(parts) >= 2:
-                        user_part = parts[0].split('!')[0][1:]  # เอา username
-                        message_part = parts[1].split(':', 1)[1].strip()  # เอา message
-                        
-                        self.total_messages += 1
-                        
-                        # ส่งข้อความทั่วไป
-                        self.message_received.emit(user_part, message_part)
-                        
-                        # ตรวจจับคำหยาบ
-                        found_words = self.optimized_detect_bad_words(message_part)
-                        
-                        if found_words:
-                            self.bad_word_count += 1
-                            
-                            chat_info = {
-                                'timestamp': datetime.now(),
-                                'username': user_part,
-                                'message': message_part,
-                                'bad_words': found_words,
-                                'channel': self.channel_name
-                            }
-                            
-                            # ใช้ mutex เพื่อ thread safety
-                            self.chat_mutex.lock()
-                            try:
-                                self.chat_messages.append(chat_info)
-                            finally:
-                                self.chat_mutex.unlock()
-                            
-                            # ส่งสัญญาณพบคำหยาบ
-                            self.bad_word_detected.emit(user_part, message_part, found_words)
-                            
-                            # อัพเดทสถิติ
-                            self.chat_stats.emit(self.total_messages, self.bad_word_count)
-                
+                # แยกข้อความที่สมบูรณ์ (ลงท้ายด้วย \r\n หรือ \n)
+                while '\n' in buffer:
+                    line, buffer = buffer.split('\n', 1)
+                    line = line.rstrip('\r')
+                    
+                    if not line:
+                        continue
+                    
+                    # จัดการ PING/PONG
+                    if line.startswith('PING'):
+                        if self.socket:  # ตรวจสอบอีกครั้งก่อนส่ง
+                            pong_response = 'PONG :tmi.twitch.tv\r\n'
+                            self.socket.send(pong_response.encode('utf-8'))
+                        continue
+                    
+                    # แยกข้อความ chat
+                    if 'PRIVMSG' in line:
+                        self.process_chat_message(line)
+                    
             except socket.timeout:
                 continue
+            except socket.error as e:
+                if self.running:
+                    self.logger.error(f"Socket error: {e}")
+                    self.handle_connection_error(f"Socket error: {e}")
+                    break
             except UnicodeDecodeError as e:
                 self.logger.warning(f"Unicode decode error: {e}")
                 continue
@@ -365,20 +315,114 @@ class TwitchChatWorker(QObject):
                     error_msg = f"Chat listening error: {e}"
                     self.logger.error(error_msg)
                     self.error_occurred.emit(error_msg)
-                    self.connection_status.emit(False, f"การเชื่อมต่อขาด: {e}")
-                    
-                    # ลองเชื่อมต่อใหม่
-                    if self.reconnect_attempts < self.max_reconnect_attempts:
-                        self.reconnect_attempts += 1
-                        retry_msg = f"กำลังลองเชื่อมต่อใหม่... ({self.reconnect_attempts}/{self.max_reconnect_attempts})"
-                        self.logger.info(retry_msg)
-                        self.connection_status.emit(False, retry_msg)
-                        time.sleep(5)  # รอ 5 วินาทีก่อนลองใหม่
-                        if self.connect_to_twitch():
-                            continue
-                    else:
-                        self.logger.error("Max reconnection attempts reached")
+                    self.handle_connection_error(error_msg)
                     break
+
+    def handle_connection_error(self, error_message):
+        """จัดการ connection error แบบรวมศูนย์"""
+        self.connection_status.emit(False, f"การเชื่อมต่อขาด: {error_message}")
+        
+        # ลองเชื่อมต่อใหม่
+        if self.reconnect_attempts < self.max_reconnect_attempts:
+            self.reconnect_attempts += 1
+            retry_msg = f"กำลังลองเชื่อมต่อใหม่... ({self.reconnect_attempts}/{self.max_reconnect_attempts})"
+            self.logger.info(retry_msg)
+            self.connection_status.emit(False, retry_msg)
+            
+            # รอก่อนลองใหม่ (exponential backoff)
+            wait_time = min(5 * (2 ** (self.reconnect_attempts - 1)), 30)  # 5, 10, 20, 30 วินาที
+            time.sleep(wait_time)
+            
+            if self.connect_to_twitch():
+                return True
+        else:
+            self.logger.error("Max reconnection attempts reached")
+        
+        return False
+
+    # 3. เพิ่มฟังก์ชัน validation
+    def validate_channel_name(self, channel):
+        """ตรวจสอบความถูกต้องของชื่อ channel"""
+        if not channel:
+            return False, "กรุณาใส่ชื่อ channel"
+        
+        if not re.match(r'^[a-zA-Z0-9_]{3,25}$', channel):
+            return False, "ชื่อ channel ต้องมี 3-25 ตัวอักษร และประกอบด้วยตัวอักษร ตัวเลข และ _ เท่านั้น"
+        
+        # ตรวจสอบคำต้องห้าม
+        forbidden_words = ['admin', 'api', 'www', 'mail', 'ftp', 'localhost']
+        if channel.lower() in forbidden_words:
+            return False, "ชื่อ channel นี้ใช้ไม่ได้"
+        
+        return True, "ชื่อ channel ถูกต้อง"
+
+    def cleanup_old_messages(self):
+        """ทำความสะอาดข้อความเก่าเมื่อใช้ memory เยอะ"""
+        self.chat_mutex.lock()
+        try:
+            current_time = datetime.now()
+            # เก็บข้อความแค่ 1 ชั่วโมงล่าสุด
+            one_hour_ago = current_time - timedelta(hours=1)
+            
+            # Filter ข้อความที่ใหม่กว่า 1 ชั่วโมง
+            self.chat_messages = deque([
+                msg for msg in self.chat_messages 
+                if msg['timestamp'] > one_hour_ago
+            ], maxlen=self.max_messages_in_memory)
+            
+            self.logger.info(f"Cleaned up old messages, kept {len(self.chat_messages)} messages")
+            
+        finally:
+            self.chat_mutex.unlock()
+
+
+    def process_chat_message(self, line):
+        """แยกการประมวลผลข้อความ chat เป็นฟังก์ชันแยก"""
+        try:
+            # ตัวอย่าง: :username!username@username.tmi.twitch.tv PRIVMSG #channel :message
+            parts = line.split('PRIVMSG')
+            if len(parts) >= 2:
+                user_part = parts[0].split('!')[0][1:]  # เอา username
+                message_part = parts[1].split(':', 1)
+                if len(message_part) < 2:
+                    return
+                    
+                message = message_part[1].strip()
+                
+                self.total_messages += 1
+                
+                # ส่งข้อความทั่วไป
+                self.message_received.emit(user_part, message)
+                
+                # ตรวจจับคำหยาบ
+                found_words = self.optimized_detect_bad_words(message)
+                
+                if found_words:
+                    self.bad_word_count += 1
+                    
+                    chat_info = {
+                        'timestamp': datetime.now(),
+                        'username': user_part,
+                        'message': message,
+                        'bad_words': found_words,
+                        'channel': self.channel_name
+                    }
+                    
+                    # ใช้ mutex เพื่อ thread safety
+                    self.chat_mutex.lock()
+                    try:
+                        self.chat_messages.append(chat_info)
+                    finally:
+                        self.chat_mutex.unlock()
+                    
+                    # ส่งสัญญาณพบคำหยาบ
+                    self.bad_word_detected.emit(user_part, message, found_words)
+                    
+                    # อัพเดทสถิติ
+                    self.chat_stats.emit(self.total_messages, self.bad_word_count)
+                    
+        except Exception as e:
+            self.logger.error(f"Error processing chat message: {e}")            
     
     def start_listening(self):
         """เริ่มการฟัง chat"""
@@ -951,12 +995,6 @@ class BadWordDetectorApp(QWidget):
         self.channel_input.setPlaceholderText('ใส่ชื่อ channel (เช่น: ninja)')
         twitch_layout.addWidget(self.channel_input, 0, 1)
         
-        twitch_layout.addWidget(QLabel('OAuth Token (ไม่บังคับ):'), 1, 0)
-        self.oauth_input = QLineEdit()
-        self.oauth_input.setPlaceholderText('oauth:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-        self.oauth_input.setEchoMode(QLineEdit.Password)
-        twitch_layout.addWidget(self.oauth_input, 1, 1)
-        
         # เพิ่มข้อมูลสถิติ Twitch
         twitch_layout.addWidget(QLabel('ข้อความทั้งหมด:'), 2, 0)
         self.twitch_total_label = QLabel('0')
@@ -967,13 +1005,7 @@ class BadWordDetectorApp(QWidget):
         self.twitch_bad_label = QLabel('0')
         self.twitch_bad_label.setStyleSheet('font-weight: bold; color: #d32f2f;')
         twitch_layout.addWidget(self.twitch_bad_label, 3, 1)
-        
-        # เพิ่มปุ่มช่วยเหลือ
-        help_btn = QPushButton('วิธีได้ OAuth Token')
-        help_btn.clicked.connect(self.show_oauth_help)
-        help_btn.setStyleSheet('background-color: #FF9800; font-size: 12px;')
-        twitch_layout.addWidget(help_btn, 4, 0, 1, 2)
-        
+           
         self.twitch_group.setLayout(twitch_layout)
         layout.addWidget(self.twitch_group)
 
@@ -1123,18 +1155,8 @@ class BadWordDetectorApp(QWidget):
                 QMessageBox.warning(self, 'ข้อผิดพลาด', 'ชื่อ channel ไม่ถูกต้อง (4-25 ตัวอักษร, ตัวอักษรและตัวเลขเท่านั้น)')
                 return
             
-            oauth = self.oauth_input.text().strip() if self.oauth_input.text().strip() else None
-            
-            # ตรวจสอบรูปแบบ OAuth Token
-            if oauth and not oauth.startswith('oauth:'):
-                oauth = f'oauth:{oauth}'
-            
-            # Validate OAuth format
-            if oauth and not re.match(r'^oauth:[a-zA-Z0-9]{30}$', oauth):
-                QMessageBox.warning(self, 'ข้อผิดพลาด', 'รูปแบบ OAuth Token ไม่ถูกต้อง')
-                return
-            
-            self.twitch_thread = TwitchChatThread(channel, oauth)
+            # เป็น:
+            self.twitch_thread = TwitchChatThread(channel, None)
             
             # เชื่อมต่อ signals
             self.twitch_thread.worker.message_received.connect(self.on_twitch_message)
@@ -1317,21 +1339,6 @@ class BadWordDetectorApp(QWidget):
                 
         except Exception as e:
             self.log_error(f"Error handling Twitch error: {e}")
-
-    def show_oauth_help(self):
-        """แสดงวิธีได้ OAuth Token"""
-        help_text = """
-วิธีได้ OAuth Token สำหรับ Twitch:
-
-1. ไปที่ https://twitchapps.com/tmi/
-2. คลิก "Connect with Twitch"
-3. อนุญาตการเข้าถึง
-4. คัดลอก OAuth Token ที่ได้
-5. ใส่ในช่อง OAuth Token (ใส่ oauth: นำหน้า)
-
-หมายเหตุ: OAuth Token ไม่บังคับ แต่จะช่วยให้เชื่อมต่อได้เสถียรกว่า
-        """
-        QMessageBox.information(self, 'วิธีได้ OAuth Token', help_text)
 
     def clear_chat_messages(self):
         """ล้างข้อความแชท"""
