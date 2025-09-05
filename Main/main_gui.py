@@ -9,10 +9,9 @@ from PyQt5.QtWidgets import (
     QFileDialog, QGroupBox, QGridLayout, QMessageBox, QFrame, QDialog, QListWidget, QLineEdit, QSystemTrayIcon, QStyle, QCheckBox, QTabWidget
 )
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QThread, QObject, QMutex
-from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtGui import QFont
 import winsound
 from datetime import datetime
-from datetime import timedelta
 import re
 import pandas as pd
 
@@ -32,18 +31,15 @@ class TwitchChatWorker(QObject):
     chat_stats = pyqtSignal(int, int)  # total_messages, bad_word_count
     error_occurred = pyqtSignal(str)  # error message
     
-    def __init__(self, channel_name, oauth_token=None):
+    def __init__(self, channel_name):
         super().__init__()
         self.channel_name = channel_name.lower()
-        self.oauth_token = oauth_token
         self.running = False
         self.socket = None
         self.bad_words = self.load_bad_words()
         self.total_messages = 0
         self.bad_word_count = 0
         
-        # ปรับปรุงการจัดการ Memory - ใช้ Circular Buffer
-        self.max_messages_in_memory = 1000
         self.chat_messages = deque(maxlen=self.max_messages_in_memory)
         
         # เพิ่ม Thread Safety
@@ -51,9 +47,6 @@ class TwitchChatWorker(QObject):
         
         self.reconnect_attempts = 0
         self.max_reconnect_attempts = 5
-        
-        # เพิ่ม Logging (ต้องเรียกก่อน initialize_detection_system)
-        self.setup_logging()
         
         # ปรับปรุงประสิทธิภาพ - สร้าง Trie และ Pre-compile patterns
         self.badwords_th = set()
@@ -73,18 +66,6 @@ class TwitchChatWorker(QObject):
         except Exception:
             # ไม่ให้ล้ม แม้ init ล้มเหลว จะ fallback ใช้ self.bad_words ได้
             pass
-        
-    def setup_logging(self):
-        """ตั้งค่า logging สำหรับ error handling ที่ดีขึ้น"""
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.FileHandler('twitch_detector.log', encoding='utf-8'),
-                logging.StreamHandler()
-            ]
-        )
-        self.logger = logging.getLogger(__name__)
         
     def initialize_detection_system(self):
         """เริ่มต้นระบบตรวจจับที่ปรับปรุงแล้ว"""
@@ -340,42 +321,6 @@ class TwitchChatWorker(QObject):
         
         return False
 
-    # 3. เพิ่มฟังก์ชัน validation
-    def validate_channel_name(self, channel):
-        """ตรวจสอบความถูกต้องของชื่อ channel"""
-        if not channel:
-            return False, "กรุณาใส่ชื่อ channel"
-        
-        if not re.match(r'^[a-zA-Z0-9_]{3,25}$', channel):
-            return False, "ชื่อ channel ต้องมี 3-25 ตัวอักษร และประกอบด้วยตัวอักษร ตัวเลข และ _ เท่านั้น"
-        
-        # ตรวจสอบคำต้องห้าม
-        forbidden_words = ['admin', 'api', 'www', 'mail', 'ftp', 'localhost']
-        if channel.lower() in forbidden_words:
-            return False, "ชื่อ channel นี้ใช้ไม่ได้"
-        
-        return True, "ชื่อ channel ถูกต้อง"
-
-    def cleanup_old_messages(self):
-        """ทำความสะอาดข้อความเก่าเมื่อใช้ memory เยอะ"""
-        self.chat_mutex.lock()
-        try:
-            current_time = datetime.now()
-            # เก็บข้อความแค่ 1 ชั่วโมงล่าสุด
-            one_hour_ago = current_time - timedelta(hours=1)
-            
-            # Filter ข้อความที่ใหม่กว่า 1 ชั่วโมง
-            self.chat_messages = deque([
-                msg for msg in self.chat_messages 
-                if msg['timestamp'] > one_hour_ago
-            ], maxlen=self.max_messages_in_memory)
-            
-            self.logger.info(f"Cleaned up old messages, kept {len(self.chat_messages)} messages")
-            
-        finally:
-            self.chat_mutex.unlock()
-
-
     def process_chat_message(self, line):
         """แยกการประมวลผลข้อความ chat เป็นฟังก์ชันแยก"""
         try:
@@ -450,21 +395,22 @@ class TwitchChatWorker(QObject):
         finally:
             self.chat_mutex.unlock()
     
-    def clear_chat_messages(self):
-        """ล้างข้อความแชทแบบ thread-safe"""
+    def clear_memory_messages(self):
+        """ล้างข้อความในหน่วยความจำของ worker"""
         self.chat_mutex.lock()
         try:
             self.chat_messages.clear()
-            self.logger.info("Chat messages cleared")
+            self.total_messages = 0
+            self.bad_word_count = 0
         finally:
             self.chat_mutex.unlock()
 
 class TwitchChatThread(QThread):
     """Thread สำหรับจัดการ Twitch chat"""
     
-    def __init__(self, channel_name, oauth_token=None):
+    def __init__(self, channel_name):
         super().__init__()
-        self.worker = TwitchChatWorker(channel_name, oauth_token)
+        self.worker = TwitchChatWorker(channel_name)
         self.worker.moveToThread(self)
         
         # เชื่อมต่อ thread signals
@@ -674,10 +620,7 @@ class DashboardWindow(QWidget):
         clear_stats_btn.clicked.connect(self.clear_stats)
         clear_stats_btn.setStyleSheet('background-color: #FF5722; font-size: 12px; padding: 8px;')
         
-        # ปุ่มล้าง Memory
-        clear_memory_btn = QPushButton('🧹 ล้าง Memory')
-        clear_memory_btn.clicked.connect(self.clear_memory)
-        clear_memory_btn.setStyleSheet('background-color: #FF9800; font-size: 12px; padding: 8px;')
+       
         
         # ปุ่มปิด
         close_btn = QPushButton('ปิด Dashboard')
@@ -685,7 +628,6 @@ class DashboardWindow(QWidget):
         close_btn.setStyleSheet('background-color: #FF5722; font-size: 14px; padding: 10px;')
         
         control_layout.addWidget(clear_stats_btn)
-        control_layout.addWidget(clear_memory_btn)
         control_layout.addWidget(close_btn)
         layout.addLayout(control_layout)
 
@@ -771,18 +713,6 @@ class DashboardWindow(QWidget):
         except Exception as e:
             QMessageBox.warning(self, 'ข้อผิดพลาด', f'ไม่สามารถล้างสถิติได้: {e}')
 
-    def clear_memory(self):
-        """ล้าง Memory"""
-        try:
-            if self.parent and self.parent.twitch_thread and self.parent.twitch_thread.worker:
-                self.parent.twitch_thread.worker.clear_chat_messages()
-                QMessageBox.information(self, 'ล้าง Memory', 'ล้าง Memory เรียบร้อยแล้ว')
-            else:
-                QMessageBox.information(self, 'ล้าง Memory', 'ไม่มีข้อมูลใน Memory ที่ต้องล้าง')
-                
-        except Exception as e:
-            QMessageBox.warning(self, 'ข้อผิดพลาด', f'ไม่สามารถล้าง Memory ได้: {e}')
-
 class BadWordDetectorApp(QWidget):
     def __init__(self):
         super().__init__()
@@ -814,13 +744,6 @@ class BadWordDetectorApp(QWidget):
         self.error_count = 0
         self.last_error_time = None
         
-        # กำหนด log_dir ก่อน
-        self.log_dir = "logs"
-        
-        # สร้างโฟลเดอร์ logs
-        if not os.path.exists(self.log_dir):
-            os.makedirs(self.log_dir)
-        
         self.tray_icon = QSystemTrayIcon(self)
         style = self.style()
         icon = style.standardIcon(QStyle.SP_MessageBoxWarning)
@@ -839,12 +762,13 @@ class BadWordDetectorApp(QWidget):
         """อัพเดทสถิติประสิทธิภาพ"""
         try:
             if self.twitch_thread and self.twitch_thread.worker:
-                # คำนวณ memory usage (ประมาณ)
-                memory_usage = len(self.twitch_thread.worker.get_chat_messages()) * 0.1  # KB per message
+                # คำนวณ memory usage (ปรับสูตรใหม่)
+                message_count = len(self.twitch_thread.worker.get_chat_messages())
+                memory_usage = message_count * 0.1  # KB per message
                 self.performance_stats['memory_usage'] = memory_usage
                 
-                # แสดง warning ถ้า memory ใช้เยอะ
-                if memory_usage > 50:  # 50 KB
+                # ปรับเกณฑ์ warning ให้เหมาะกับ 200 ข้อความ
+                if memory_usage > 15:  # 15 KB (75% ของ 200 ข้อความ)
                     self.show_memory_warning(memory_usage)
                     
         except Exception as e:
@@ -853,26 +777,15 @@ class BadWordDetectorApp(QWidget):
     def show_memory_warning(self, memory_usage):
         """แสดง warning เมื่อ memory ใช้เยอะ"""
         if not hasattr(self, '_last_memory_warning') or \
-           (datetime.now() - self._last_memory_warning).seconds > 60:
+        (datetime.now() - self._last_memory_warning).seconds > 60:
             self._last_memory_warning = datetime.now()
-            QMessageBox.warning(
-                self, 
-                'Memory Usage Warning', 
-                f'Memory usage is high: {memory_usage:.1f} KB\nConsider clearing chat messages.'
-            )
-
-    def log_error(self, error_message):
-        """บันทึก error พร้อม timestamp"""
-        self.error_count += 1
-        self.last_error_time = datetime.now()
-        
-        # บันทึกลงไฟล์ log
-        try:
-            with open(os.path.join(self.log_dir, 'error.log'), 'a', encoding='utf-8') as f:
-                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                f.write(f'[{timestamp}] {error_message}\n')
-        except Exception as e:
-            print(f"Failed to write error log: {e}")
+            
+            # แสดง warning พร้อมแนะนำ
+            msg = f'การใช้หน่วยความจำสูง: {memory_usage:.1f} KB\n'
+            msg += f'ข้อความที่เก็บ: {int(memory_usage / 0.1)} ข้อความ\n'
+            msg += 'คลิก "ล้างข้อมูลทั้งหมด" เพื่อลดการใช้หน่วยความจำ'
+            
+            QMessageBox.information(self, 'แจ้งเตือนการใช้หน่วยความจำ', msg)
 
     def show_user_friendly_error(self, error_type, error_message):
         """แสดง error message ที่เข้าใจง่ายสำหรับผู้ใช้"""
@@ -952,195 +865,211 @@ class BadWordDetectorApp(QWidget):
         """)
 
     def init_ui(self):
-        layout = QVBoxLayout()
-        layout.setSpacing(15)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout = QVBoxLayout() # จัดเรียง widget แบบแนวตั้ง
+        layout.setSpacing(15) # ระยะห่างระหว่าง widget
+        layout.setContentsMargins(20, 20, 20, 20) # ขอบรอบๆ layout (ซ้าย, บน, ขวา, ล่าง)
 
         # Header
-        header_label = QLabel('🎮 Twitch Bad Word Detector - Enhanced')
+        header_label = QLabel('🎮 Twitch Bad Word Detector')
         header_label.setStyleSheet('font-size: 24px; font-weight: bold; color: #9146FF; text-align: center; margin: 10px;')
         layout.addWidget(header_label)
 
         # Status
-        status_frame = QFrame()
-        status_frame.setFrameStyle(QFrame.StyledPanel)
-        status_layout = QHBoxLayout()
-        self.status_label = QLabel('สถานะ: พร้อมใช้งาน')
+        status_frame = QFrame() # กรอบสำหรับแสดงสถานะ
+        status_frame.setFrameStyle(QFrame.StyledPanel) # สไตล์กรอบแบบ panel
+        status_layout = QHBoxLayout() # layout แนวนอนสำหรับสถานะ
+        self.status_label = QLabel('สถานะ: พร้อมใช้งาน') # ข้อความสถานะ (เก็บไว้ใน self เพื่ออัพเดตได้)
         self.status_label.setStyleSheet('color: #4CAF50; font-weight: bold; font-size: 12px;')
-        status_layout.addWidget(self.status_label)
-        status_frame.setLayout(status_layout)
-        layout.addWidget(status_frame)
+        status_layout.addWidget(self.status_label) # ใส่ label ลงไปใน layout
+        status_frame.setLayout(status_layout)  # นำ layout มาใส่ในกรอบ
+        layout.addWidget(status_frame) # เพิ่มกรอบนี้ลงใน layout หลัก
 
         # ข้อมูลระบบตรวจจับ
-        detection_info = QLabel('🔍 ตรวจจับคำหยาบ: ไทย + อังกฤษ | ✨ ปรับปรุงความแม่นยำ | 🚫 ลบ Fuzzy Matching')
+        detection_info = QLabel('🔍 ตรวจจับคำหยาบ: ไทย + อังกฤษ')
         detection_info.setStyleSheet('font-weight: bold; color: #2196F3; font-size: 12px;')
         layout.addWidget(detection_info)
 
         # Badword manager buttons
-        badword_mgr_btn = QPushButton('จัดการคำหยาบ (ไทย)')
+        # ปุ่มสำหรับเปิดหน้าต่างจัดการคำหยาบภาษาไทย
+        badword_mgr_btn = QPushButton('จัดการคำหยาบ (ไทย)') 
         badword_mgr_btn.clicked.connect(lambda: self.open_badword_manager('badwords.txt'))
+
+        # -> เมื่อกดปุ่ม จะเรียกฟังก์ชัน self.open_badword_manager() 
+        #    โดยส่งชื่อไฟล์ badwords.txt เข้าไป (ไฟล์เก็บคำหยาบภาษาไทย)
+
+        # ปุ่มสำหรับเปิดหน้าต่างจัดการคำหยาบภาษาอังกฤษ
         badword_mgr_en_btn = QPushButton('จัดการคำหยาบ (อังกฤษ)')
         badword_mgr_en_btn.clicked.connect(lambda: self.open_badword_manager('badwords_en.txt'))
+
+        # จัด layout แบบแนวนอน สำหรับวางปุ่มทั้งสองข้าง ๆ กัน
         btn_mgr_layout = QHBoxLayout()
         btn_mgr_layout.addWidget(badword_mgr_btn)
         btn_mgr_layout.addWidget(badword_mgr_en_btn)
+
+        # นำ layout ปุ่มจัดการ badword ใส่เข้าไปใน layout หลัก
         layout.addLayout(btn_mgr_layout)
 
         # Twitch settings
+        # กล่อง (GroupBox) สำหรับรวมการตั้งค่า Twitch
         self.twitch_group = QGroupBox('การตั้งค่า Twitch')
-        twitch_layout = QGridLayout()
         
+        twitch_layout = QGridLayout() # ใช้ layout แบบตาราง (grid)
+        
+        # แถวที่ 0: ใส่ label "Channel Name:" และกล่อง input สำหรับกรอกชื่อแชนแนล
         twitch_layout.addWidget(QLabel('Channel Name:'), 0, 0)
-        self.channel_input = QLineEdit()
-        self.channel_input.setPlaceholderText('ใส่ชื่อ channel (เช่น: ninja)')
+        self.channel_input = QLineEdit()   # สร้างช่องกรอกข้อความ
+        self.channel_input.setPlaceholderText('ใส่ชื่อ channel (เช่น: ninja)')  
+        # -> placeholder = ตัวอย่างข้อความที่โผล่มาจาง ๆ
         twitch_layout.addWidget(self.channel_input, 0, 1)
-        
-        # เพิ่มข้อมูลสถิติ Twitch
+
+        # แถวที่ 2: ข้อความทั้งหมดที่ตรวจจับได้
         twitch_layout.addWidget(QLabel('ข้อความทั้งหมด:'), 2, 0)
-        self.twitch_total_label = QLabel('0')
-        self.twitch_total_label.setStyleSheet('font-weight: bold; color: #2196F3;')
+        self.twitch_total_label = QLabel('0')  
+        # -> เริ่มต้นที่ 0 (ยังไม่พบข้อความ)
+        self.twitch_total_label.setStyleSheet('font-weight: bold; color: #2196F3;')  
+        # -> ตัวหนา, น้ำเงิน
         twitch_layout.addWidget(self.twitch_total_label, 2, 1)
-        
+
+        # แถวที่ 3: จำนวนคำหยาบที่พบ
         twitch_layout.addWidget(QLabel('คำหยาบที่พบ:'), 3, 0)
-        self.twitch_bad_label = QLabel('0')
-        self.twitch_bad_label.setStyleSheet('font-weight: bold; color: #d32f2f;')
+        self.twitch_bad_label = QLabel('0')  
+        # -> เริ่มต้นที่ 0 (ยังไม่เจอคำหยาบ)
+        self.twitch_bad_label.setStyleSheet('font-weight: bold; color: #d32f2f;')  
+        # -> ตัวหนา, สีแดง
         twitch_layout.addWidget(self.twitch_bad_label, 3, 1)
-           
+
+        # ใส่ layout ตารางลงในกล่อง groupbox
         self.twitch_group.setLayout(twitch_layout)
+        # เพิ่ม groupbox นี้เข้าไปใน layout หลัก
         layout.addWidget(self.twitch_group)
 
-        # Control buttons
+        # -------------------- Control Buttons --------------------
+        # กล่องรวมปุ่มควบคุมการตรวจจับ
         control_group = QGroupBox('ควบคุมการตรวจจับ')
         control_layout = QHBoxLayout()
-        
-        # ปุ่มสำหรับ Twitch mode
+
+        # ปุ่มสำหรับเชื่อมต่อ Twitch
         self.twitch_connect_btn = QPushButton('เชื่อมต่อ Twitch')
+        # ปุ่มสำหรับยกเลิกการเชื่อมต่อ
         self.twitch_disconnect_btn = QPushButton('ยกเลิกการเชื่อมต่อ')
-        self.twitch_connect_btn.clicked.connect(self.connect_twitch)
-        self.twitch_disconnect_btn.clicked.connect(self.disconnect_twitch)
-        self.twitch_disconnect_btn.setEnabled(False)
+
+        # กำหนดการทำงานเมื่อกดปุ่ม
+        self.twitch_connect_btn.clicked.connect(self.connect_twitch)  # เชื่อมต่อ
+        self.twitch_disconnect_btn.clicked.connect(self.disconnect_twitch)  # ยกเลิกการเชื่อมต่อ
+        self.twitch_disconnect_btn.setEnabled(False)  
+        # -> ตอนแรกปุ่ม disconnect ใช้งานไม่ได้ เพราะยังไม่ได้เชื่อมต่อ
+
+        # วางปุ่มทั้งสองใน layout แนวนอน
         control_layout.addWidget(self.twitch_connect_btn)
         control_layout.addWidget(self.twitch_disconnect_btn)
-        
+
+        # ใส่ layout ลงใน groupbox แล้วเพิ่ม groupbox ลงใน layout หลัก
         control_group.setLayout(control_layout)
         layout.addWidget(control_group)
 
-        # Dashboard Button
+        # -------------------- Dashboard Button --------------------
+        # ปุ่มสำหรับเปิดหน้า dashboard
         dashboard_btn = QPushButton('📊 เปิด Dashboard')
-        dashboard_btn.clicked.connect(self.open_dashboard)
-        dashboard_btn.setStyleSheet('background-color: #2196F3; font-size: 14px; padding: 10px;')
+        dashboard_btn.clicked.connect(self.open_dashboard)  # กดแล้วเปิด dashboard
+        dashboard_btn.setStyleSheet('background-color: #2196F3; font-size: 14px; padding: 10px;')  
+        # -> ปรับสไตล์ให้ปุ่มดูเด่น
         layout.addWidget(dashboard_btn)
-        
-        # Settings
+
+        # -------------------- Settings --------------------
+        # กล่องการตั้งค่าทั่วไป
         settings_group = QGroupBox('การตั้งค่า')
         settings_layout = QGridLayout()
-        settings_layout.setSpacing(15)
-        
+        settings_layout.setSpacing(15)  # ระยะห่างระหว่าง widgets
+
+        # ---- ตั้งค่าเสียงเตือน ----
         sound_label = QLabel('เสียงเตือน:')
         sound_label.setStyleSheet('font-weight: bold;')
         settings_layout.addWidget(sound_label, 0, 0)
-        
+
+        # ปุ่มเลือกไฟล์เสียง
         self.sound_btn = QPushButton('เลือกไฟล์เสียง (.wav)')
         self.sound_btn.clicked.connect(self.select_sound)
         settings_layout.addWidget(self.sound_btn, 0, 1)
-        
-        # การจัดการไฟล์
-        file_mgmt_label = QLabel('การจัดการไฟล์:')
-        file_mgmt_label.setStyleSheet('font-weight: bold;')
-        settings_layout.addWidget(file_mgmt_label, 1, 0)
-        
-        file_mgmt_layout = QHBoxLayout()
-        self.select_folder_btn = QPushButton('เลือกโฟลเดอร์บันทึก')
-        self.select_folder_btn.clicked.connect(self.select_save_folder)
-        self.folder_label = QLabel(f'โฟลเดอร์ปัจจุบัน: {self.log_dir}')
-        self.folder_label.setStyleSheet('font-size: 10px; color: #666;')
-        
-        file_mgmt_layout.addWidget(self.select_folder_btn)
-        file_mgmt_layout.addWidget(self.folder_label)
-        settings_layout.addLayout(file_mgmt_layout, 1, 1)
-        
-        # ปุ่มจัดการไฟล์
-        file_actions_layout = QHBoxLayout()
-        self.open_folder_btn = QPushButton('เปิดโฟลเดอร์')
-        self.open_folder_btn.clicked.connect(self.open_save_folder)
-        self.cleanup_btn = QPushButton('ลบไฟล์เก่า (7 วัน)')
-        self.cleanup_btn.clicked.connect(self.cleanup_old_files)
-        
-        file_actions_layout.addWidget(self.open_folder_btn)
-        file_actions_layout.addWidget(self.cleanup_btn)
-        settings_layout.addLayout(file_actions_layout, 2, 0, 1, 2)
 
         settings_group.setLayout(settings_layout)
         layout.addWidget(settings_group)
 
-        # Results - แสดงเฉพาะคำหยาบที่พบ
+        # -------------------- Results --------------------
+        # กล่องสำหรับแสดงผลลัพธ์
         results_group = QGroupBox('ผลการตรวจจับ')
         results_layout = QVBoxLayout()
-        
-        # Tab widget สำหรับแยกผลลัพธ์
+
+        # ใช้ Tab widget แยกผลลัพธ์ (เช่น คำหยาบ / แชท)
         self.results_tab = QTabWidget()
-        
-        # Tab คำหยาบที่พบ
+
+        # --- Tab 1: คำหยาบที่พบ ---
         badword_tab = QWidget()
         badword_layout = QVBoxLayout()
-        
+
         badword_label = QLabel('คำหยาบที่พบ:')
-        badword_label.setStyleSheet('font-weight: bold; color: #d32f2f;')
+        badword_label.setStyleSheet('font-weight: bold; color: #d32f2f;')  # สีแดง
         badword_layout.addWidget(badword_label)
-        
-        self.badword_text = QTextEdit()
+
+        self.badword_text = QTextEdit()   # กล่องข้อความโชว์คำหยาบ
         self.badword_text.setMaximumHeight(100)
         self.badword_text.setPlaceholderText('คำหยาบที่พบจะแสดงที่นี่...')
         badword_layout.addWidget(self.badword_text)
-        
+
         badword_tab.setLayout(badword_layout)
         self.results_tab.addTab(badword_tab, 'คำหยาบที่พบ')
-        
-        # Tab ข้อความแชท (สำหรับ Twitch mode)
+
+        # --- Tab 2: ข้อความแชท ---
         chat_tab = QWidget()
         chat_layout = QVBoxLayout()
-        
+
         chat_label = QLabel('ข้อความแชทล่าสุด:')
-        chat_label.setStyleSheet('font-weight: bold; color: #2196F3;')
+        chat_label.setStyleSheet('font-weight: bold; color: #2196F3;')  # สีน้ำเงิน
         chat_layout.addWidget(chat_label)
-        
-        self.chat_text = QTextEdit()
+
+        self.chat_text = QTextEdit()  # กล่องข้อความโชว์แชท
         self.chat_text.setMaximumHeight(150)
         self.chat_text.setPlaceholderText('ข้อความแชทจะแสดงที่นี่ (Twitch mode)...')
         chat_layout.addWidget(self.chat_text)
-        
+
         # ปุ่มล้างข้อความแชท
-        clear_chat_btn = QPushButton('ล้างข้อความแชท')
+        clear_chat_btn = QPushButton('🗑️ ล้างข้อมูลทั้งหมด')
+        clear_chat_btn.setToolTip('ล้างข้อความแชท, คำหยาบ, และข้อมูลในหน่วยความจำ')
         clear_chat_btn.clicked.connect(self.clear_chat_messages)
         clear_chat_btn.setStyleSheet('background-color: #FF5722; font-size: 12px;')
         chat_layout.addWidget(clear_chat_btn)
-        
+
         chat_tab.setLayout(chat_layout)
         self.results_tab.addTab(chat_tab, 'ข้อความแชท')
-        
+
+        # เพิ่ม tab widget ลงใน layout ผลลัพธ์
         results_layout.addWidget(self.results_tab)
         results_group.setLayout(results_layout)
         layout.addWidget(results_group)
 
+        # -------------------- Export Log Button --------------------
+        # ปุ่ม export log เป็นไฟล์ CSV
         export_btn = QPushButton('Export Log (CSV)')
         export_btn.clicked.connect(self.export_log)
         layout.addWidget(export_btn)
 
-        # UI/UX ปรับปรุง
+        # -------------------- UI/UX ปรับปรุง --------------------
         # Dark Mode Toggle
         dark_mode_layout = QHBoxLayout()
         self.dark_mode_checkbox = QCheckBox('Dark Mode')
         self.dark_mode_checkbox.clicked.connect(self.toggle_dark_mode)
         dark_mode_layout.addWidget(self.dark_mode_checkbox)
-        
-        # Keyboard Shortcuts Info
+
+        # แสดง shortcut keys ให้ผู้ใช้
         shortcuts_info = QLabel('⌨️ Shortcuts: Ctrl+D: Dark Mode | Ctrl+E: Export Log | Ctrl+R: Reset Stats')
-        shortcuts_info.setStyleSheet('font-size: 10px; color: #666; background-color: #f9f9f9; padding: 5px; border-radius: 3px;')
+        shortcuts_info.setStyleSheet(
+            'font-size: 10px; color: #666; background-color: #f9f9f9; padding: 5px; border-radius: 3px;'
+        )
         dark_mode_layout.addWidget(shortcuts_info)
-        
+
         layout.addLayout(dark_mode_layout)
 
-        self.setLayout(layout)
+        # -------------------- Apply Layout --------------------
+        self.setLayout(layout)   # ตั้งค่า layout หลักให้กับ UI นี้
 
     def connect_twitch(self):
         """เชื่อมต่อ Twitch"""
@@ -1349,7 +1278,19 @@ class BadWordDetectorApp(QWidget):
             
             # ล้างข้อความใน worker ด้วย
             if self.twitch_thread and self.twitch_thread.worker:
-                self.twitch_thread.worker.clear_chat_messages()
+                self.twitch_thread.worker.clear_memory_messages()
+                
+            # ล้างคำหยาบที่แสดงใน UI ด้วย
+            self.badword_text.clear()
+            self.badword_text.setPlaceholderText('คำหยาบที่พบจะแสดงที่นี่...')
+            
+            # รีเซ็ตสถิติการตรวจจับ
+            self.detection_count = 0
+            self.detection_times = []
+            self.twitch_total_messages = 0
+            self.twitch_bad_word_count = 0
+            self.twitch_total_label.setText('0')
+            self.twitch_bad_label.setText('0')
                 
         except Exception as e:
             self.log_error(f"Error clearing chat messages: {e}")
@@ -1425,40 +1366,6 @@ class BadWordDetectorApp(QWidget):
             self.log_error(error_msg)
             self.show_user_friendly_error('file', error_msg)
 
-    def select_save_folder(self):
-        folder = QFileDialog.getExistingDirectory(self, 'เลือกโฟลเดอร์บันทึก')
-        if folder:
-            self.log_dir = folder
-            self.folder_label.setText(f'โฟลเดอร์ปัจจุบัน: {self.log_dir}')
-
-    def open_save_folder(self):
-        os.startfile(self.log_dir)
-
-    def cleanup_old_files(self):
-        """ลบไฟล์เก่าพร้อม error handling"""
-        try:
-            # ตรวจสอบและลบไฟล์เก่าในโฟลเดอร์
-            removed_count = 0
-            for filename in os.listdir(self.log_dir):
-                if filename.endswith(('.png', '.jpg', '.csv', '.log')):
-                    file_path = os.path.join(self.log_dir, filename)
-                    try:
-                        file_time = datetime.fromtimestamp(os.path.getctime(file_path))
-                        if datetime.now() - file_time > timedelta(days=7):
-                            os.remove(file_path)
-                            removed_count += 1
-                    except PermissionError:
-                        continue  # ข้ามไฟล์ที่ลบไม่ได้
-                    except Exception as e:
-                        self.log_error(f"Error removing file {filename}: {e}")
-                        
-            QMessageBox.information(self, 'ลบไฟล์เรียบร้อย', f'ลบไฟล์เก่าเรียบร้อยแล้ว {removed_count} ไฟล์')
-            
-        except Exception as e:
-            error_msg = f"Error cleaning up old files: {e}"
-            self.log_error(error_msg)
-            self.show_user_friendly_error('file', error_msg)
-
     def closeEvent(self, event):
         """จัดการเมื่อปิดโปรแกรม"""
         try:
@@ -1476,33 +1383,12 @@ class BadWordDetectorApp(QWidget):
                         self.twitch_thread.terminate()  # Force terminate
                         self.twitch_thread.wait(1000)  # รออีก 1 วินาที
             
-            # บันทึกสถิติสุดท้าย
-            self.log_final_stats()
             
             event.accept()
             
         except Exception as e:
             self.log_error(f"Error during application shutdown: {e}")
             event.accept()
-
-    def log_final_stats(self):
-        """บันทึกสถิติสุดท้าย"""
-        try:
-            stats = {
-                'total_messages': self.twitch_total_messages,
-                'bad_word_count': self.twitch_bad_word_count,
-                'detection_count': self.detection_count,
-                'error_count': self.error_count,
-                'avg_detection_time': self.performance_stats['avg_detection_time'],
-                'session_duration': (datetime.now() - self.start_time).total_seconds() if self.start_time else 0
-            }
-            
-            with open(os.path.join(self.log_dir, 'session_stats.log'), 'a', encoding='utf-8') as f:
-                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                f.write(f'[{timestamp}] Session Stats: {stats}\n')
-                
-        except Exception as e:
-            print(f"Error logging final stats: {e}")
 
     def toggle_dark_mode(self):
         """สลับ Dark Mode"""
