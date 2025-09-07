@@ -1,0 +1,1 @@
+[2025-09-05 22:08:42] Error connecting to Twitch: 'TwitchChatWorker' object has no attribute 'max_messages_in_memory'

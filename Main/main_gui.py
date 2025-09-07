@@ -23,6 +23,13 @@ except ImportError:
     WORDSEGMENT_AVAILABLE = False
     print("wordsegment not available, falling back to basic detection")    
 
+# Configure logging at the beginning of the script
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
 class TwitchChatWorker(QObject):
     """Worker class สำหรับจัดการ Twitch chat connection"""
     message_received = pyqtSignal(str, str)  # username, message
@@ -33,14 +40,15 @@ class TwitchChatWorker(QObject):
     
     def __init__(self, channel_name):
         super().__init__()
+        self.logger = logging.getLogger(__name__) 
         self.channel_name = channel_name.lower()
         self.running = False
         self.socket = None
-        self.bad_words = self.load_bad_words()
+        self.badwords_th, self.badwords_en = self.load_bad_words()
         self.total_messages = 0
         self.bad_word_count = 0
         
-        self.chat_messages = deque(maxlen=self.max_messages_in_memory)
+        self.chat_messages = deque(maxlen=200) # Added maxlen to prevent infinite growth
         
         # เพิ่ม Thread Safety
         self.chat_mutex = QMutex()
@@ -48,9 +56,9 @@ class TwitchChatWorker(QObject):
         self.reconnect_attempts = 0
         self.max_reconnect_attempts = 5
         
-        # ปรับปรุงประสิทธิภาพ - สร้าง Trie และ Pre-compile patterns
-        self.badwords_th = set()
-        self.badwords_en = set()
+        # สร้าง Trie และ Pre-compile patterns
+        # self.badwords_th = set() # This line is redundant, load_bad_words() handles it
+        # self.badwords_en = set() # This line is redundant
         
         # โหลด wordsegment dictionary
         if WORDSEGMENT_AVAILABLE:
@@ -60,60 +68,39 @@ class TwitchChatWorker(QObject):
             except Exception as e:
                 print(f"Error loading wordsegment dictionary: {e}")
         
-        # เตรียมชุดคำหยาบไทย/อังกฤษสำหรับการตรวจแบบเหมาะสม
-        try:
-            self.initialize_detection_system()
-        except Exception:
-            # ไม่ให้ล้ม แม้ init ล้มเหลว จะ fallback ใช้ self.bad_words ได้
-            pass
-        
-    def initialize_detection_system(self):
-        """เริ่มต้นระบบตรวจจับที่ปรับปรุงแล้ว"""
-        try:
-            # แยกคำไทยและอังกฤษ
-            for word in self.bad_words:
-                if re.search(r'[ก-๙]', word):
-                    self.badwords_th.add(word.lower())
-                else:
-                    self.badwords_en.add(word.lower())
-                     
-            self.logger.info(f"Initialized detection system with {len(self.bad_words)} words")
-            self.logger.info(f"Thai words: {len(self.badwords_th)}, English words: {len(self.badwords_en)}")
-            
-        except Exception as e:
-            self.logger.error(f"Error initializing detection system: {e}")
-            self.error_occurred.emit(f"Detection system error: {e}")
-    
-      
     def load_bad_words(self):
-        """โหลดคำหยาบจากไฟล์"""
-        badwords = []
+        # โหลดแยก
+        badwords_th = set()
+        badwords_en = set()
+        
+        # โหลดคำไทย
         try:
             with open('badwords.txt', 'r', encoding='utf-8') as f:
-                badwords += [line.strip() for line in f if line.strip()]
+                for line in f:
+                    if line.strip():
+                        badwords_th.add(line.strip().lower())
         except FileNotFoundError:
-            self.logger.warning("badwords.txt not found")
-        except Exception as e:
-            self.logger.error(f"Error loading badwords.txt: {e}")
-            
+            self.logger.warning("Thai badwords.txt not found.")
+        
+        # โหลดคำอังกฤษ
         try:
             with open('badwords_en.txt', 'r', encoding='utf-8') as f:
-                badwords += [line.strip() for line in f if line.strip()]
+                for line in f:
+                    if line.strip():
+                        badwords_en.add(line.strip().lower())
         except FileNotFoundError:
-            self.logger.warning("badwords_en.txt not found")
-        except Exception as e:
-            self.logger.error(f"Error loading badwords_en.txt: {e}")
-            
-        return badwords
+            self.logger.warning("English badwords_en.txt not found.")
+        
+        return badwords_th, badwords_en
     
     def detect_english_profanity(self, message):
         """ตรวจจับคำหยาบภาษาอังกฤษด้วย wordsegment + badwords_en - ปรับปรุงแล้ว"""
         try:
-            print(f"🔍 Debug: detect_english_profanity called with: '{message}'")
+            self.logger.debug(f"🔍 Debug: detect_english_profanity called with: '{message}'")
             
             # ขั้นตอนที่ 1: Clean message
             cleaned_message = re.sub(r'[^a-zA-Z\s]', '', message.lower())
-            print(f"🧹 Cleaned message: '{cleaned_message}'")
+            self.logger.debug(f"🧹 Cleaned message: '{cleaned_message}'")
             
             # ขั้นตอนที่ 2: วิธีใหม่ - ใช้ wordsegment กับข้อความทั้งหมดเลย
             if WORDSEGMENT_AVAILABLE:
@@ -121,18 +108,18 @@ class TwitchChatWorker(QObject):
                     # ลบ space ออกแล้ว segment ทั้งหมด
                     message_no_space = cleaned_message.replace(' ', '')
                     segmented_words = segment(message_no_space)
-                    print(f"✂️ Segmented entire message: '{message_no_space}' -> {segmented_words}")
+                    self.logger.debug(f"✂️ Segmented entire message: '{message_no_space}' -> {segmented_words}")
                     
                     # รวมกับคำที่แยกด้วย space ด้วย (เผื่อคำปกติ)
                     normal_words = cleaned_message.split()
                     words_to_check = list(set(segmented_words + normal_words))  # ลบคำซ้ำ
-                    print(f"🎯 Final words to check: {words_to_check}")
+                    self.logger.debug(f"🎯 Final words to check: {words_to_check}")
                     
                 except Exception as e:
-                    print(f"⚠️ wordsegment error: {e}")
+                    self.logger.warning(f"⚠️ wordsegment error: {e}")
                     words_to_check = cleaned_message.split()
             else:
-                print("❌ wordsegment not available")
+                self.logger.debug("❌ wordsegment not available")
                 words_to_check = cleaned_message.split()
             
             # ขั้นตอนที่ 3: ตรวจสอบแต่ละคำ
@@ -141,13 +128,13 @@ class TwitchChatWorker(QObject):
                 if len(word) >= 3:  # ตรวจเฉพาะคำที่ยาวพอ
                     if word in self.badwords_en:
                         found_words.append(word)
-                        print(f"🚨 Found profanity: '{word}'")
+                        self.logger.info(f"🚨 Found English profanity: '{word}'")
             
-            print(f"✅ Final result: {found_words}")
+            self.logger.debug(f"✅ Final result: {found_words}")
             return found_words
             
         except Exception as e:
-            print(f"❌ Error in detect_english_profanity: {e}")
+            self.logger.error(f"❌ Error in detect_english_profanity: {e}")
             return []
                   
     def detect_thai_profanity(self, message):
@@ -253,10 +240,10 @@ class TwitchChatWorker(QObject):
                     self.logger.error("Socket is None, cannot receive data")
                     break
                 
+                self.socket.settimeout(0.5) # Set a small timeout for graceful shutdown
                 data = self.socket.recv(1024).decode('utf-8', errors='ignore')  # เพิ่ม error handling สำหรับ encoding
                 if not data:
-                    self.logger.warning("No data received, connection may be closed")
-                    time.sleep(1)
+                    self.logger.debug("No data received, continuing loop.")
                     continue
                 
                 # เพิ่มข้อมูลใหม่เข้า buffer
@@ -282,7 +269,7 @@ class TwitchChatWorker(QObject):
                         self.process_chat_message(line)
                     
             except socket.timeout:
-                continue
+                continue # This is expected behavior, just continue the loop
             except socket.error as e:
                 if self.running:
                     self.logger.error(f"Socket error: {e}")
@@ -1084,8 +1071,7 @@ class BadWordDetectorApp(QWidget):
                 QMessageBox.warning(self, 'ข้อผิดพลาด', 'ชื่อ channel ไม่ถูกต้อง (4-25 ตัวอักษร, ตัวอักษรและตัวเลขเท่านั้น)')
                 return
             
-            # เป็น:
-            self.twitch_thread = TwitchChatThread(channel, None)
+            self.twitch_thread = TwitchChatThread(channel) 
             
             # เชื่อมต่อ signals
             self.twitch_thread.worker.message_received.connect(self.on_twitch_message)
@@ -1330,7 +1316,7 @@ class BadWordDetectorApp(QWidget):
             self.bad_words = self.load_all_bad_words()
             # อัพเดท bad_words ใน worker ด้วย
             if self.twitch_thread and self.twitch_thread.worker:
-                self.twitch_thread.worker.bad_words = self.load_all_bad_words()
+                self.twitch_thread.worker.badwords_th, self.twitch_thread.worker.badwords_en = self.twitch_thread.worker.load_bad_words()
 
     def export_log(self):
         """Export log พร้อม error handling"""
@@ -1365,6 +1351,12 @@ class BadWordDetectorApp(QWidget):
             error_msg = f"Error exporting log: {e}"
             self.log_error(error_msg)
             self.show_user_friendly_error('file', error_msg)
+    
+    def log_error(self, message):
+        """Centralized error logging and counting"""
+        logging.error(message)
+        self.error_count += 1
+        self.last_error_time = datetime.now()
 
     def closeEvent(self, event):
         """จัดการเมื่อปิดโปรแกรม"""
