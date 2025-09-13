@@ -55,11 +55,7 @@ class TwitchChatWorker(QObject):
         
         self.reconnect_attempts = 0
         self.max_reconnect_attempts = 5
-        
-        # สร้าง Trie และ Pre-compile patterns
-        # self.badwords_th = set() # This line is redundant, load_bad_words() handles it
-        # self.badwords_en = set() # This line is redundant
-        
+    
         # โหลด wordsegment dictionary
         if WORDSEGMENT_AVAILABLE:
             try:
@@ -274,7 +270,7 @@ class TwitchChatWorker(QObject):
                 if self.running:
                     self.logger.error(f"Socket error: {e}")
                     self.handle_connection_error(f"Socket error: {e}")
-                    break
+                    continue
             except UnicodeDecodeError as e:
                 self.logger.warning(f"Unicode decode error: {e}")
                 continue
@@ -291,7 +287,7 @@ class TwitchChatWorker(QObject):
         self.connection_status.emit(False, f"การเชื่อมต่อขาด: {error_message}")
         
         # ลองเชื่อมต่อใหม่
-        if self.reconnect_attempts < self.max_reconnect_attempts:
+        while self.reconnect_attempts < self.max_reconnect_attempts and self.running:
             self.reconnect_attempts += 1
             retry_msg = f"กำลังลองเชื่อมต่อใหม่... ({self.reconnect_attempts}/{self.max_reconnect_attempts})"
             self.logger.info(retry_msg)
@@ -303,11 +299,10 @@ class TwitchChatWorker(QObject):
             
             if self.connect_to_twitch():
                 return True
-        else:
-            self.logger.error("Max reconnection attempts reached")
-        
+                
+        self.logger.error("Max reconnection attempts reached")
         return False
-
+        
     def process_chat_message(self, line):
         """แยกการประมวลผลข้อความ chat เป็นฟังก์ชันแยก"""
         try:
@@ -643,7 +638,7 @@ class DashboardWindow(QWidget):
                 recent_detections = [t for t in self.parent.detection_times if (now - t).seconds <= 60]
                 freq = len(recent_detections)
                 self.detection_freq_label.setText(f'{freq} ครั้ง/นาที')
-                
+                 
                 # อัพเดทอัตราส่วนคำหยาบ
                 if self.parent.twitch_total_messages > 0:
                     ratio = (self.parent.detection_count / self.parent.twitch_total_messages) * 100
